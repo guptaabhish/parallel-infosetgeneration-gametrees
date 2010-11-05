@@ -1,3 +1,4 @@
+//CS598 Proj
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -5,6 +6,8 @@
 uint16_t getBlockVal(uint16_t*,int);
 void removePiece(uint16_t *state,uint16_t fromblock);
 void addPiece(uint16_t *state,uint16_t toblock,uint16_t pieceVal);
+int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
+int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
 
 void printPiece(uint16_t val)
 {
@@ -57,16 +60,154 @@ uint16_t getBlockVal(uint16_t *arr,int block)
 	return val;
 }
 
-int moveQueen(uint16_t *state,bool moveWhite,uint16_t fromblock)
+int moveQueen(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates)
 {
-	int totalStates=0;
+	int totalStates=0,statesB,statesR;
+	uint16_t **newStatesB,**newStatesR;
+	printf("))))))))))))))))))))))))))))))))))0\n");
+	//diagonal moves
+	statesB=moveBishop(state,moveWhite,fromblock,&newStatesB,true);
+	//straight moves
+	statesR=moveRook(state,moveWhite,fromblock,&newStatesR,true);
+	totalStates=statesB+statesR;
+	for(int i=0;i<statesB;i++) (*newStates)[i]=newStatesB[i];
+	for(int i=0;i<statesR;i++) (*newStates)[i+statesB]=newStatesR[i];
+	printf("\n\nQueen at %d block can move %d moves\n",fromblock,totalStates);
 	return totalStates;
 
 }
 
-int moveKing(uint16_t *state,bool moveWhite,uint16_t fromblock)
+void kingHelper(uint16_t *state,uint16_t fromblock,uint16_t *moves,int toblock,bool moveWhite)
+{
+	int start,end;
+        if(moveWhite)
+        {
+                start=7;end=12;
+        }
+        else
+        {
+                start=1;end=6;
+        }
+
+                int val=getBlockVal(state,toblock);
+                if(val==0)
+		{
+			removePiece(moves,fromblock);
+	                if(moveWhite)
+                	        addPiece(moves,toblock,4);
+        	        else
+	                        addPiece(moves,toblock,10);
+
+		}
+                else if(val>=start && val<=end)
+                {
+                        removePiece(moves,toblock);
+	                if(moveWhite)
+                	        addPiece(moves,toblock,4);
+        	        else
+	                        addPiece(moves,toblock,10);
+
+                }
+}
+
+int moveKing(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates)
 {
         int totalStates=0;
+	uint16_t *moves[8];
+        int start,end;
+        if(moveWhite)
+        {
+                start=7;end=12;
+        }
+        else
+        {
+                start=1;end=6;
+        }
+
+	// move straight
+	int toblock=fromblock-8;
+	int val=getBlockVal(state,toblock);
+	if(fromblock/8>0 && (val==0 || (val>=start && val<=end)))
+	{
+		moves[totalStates]=new uint16_t[16];
+		for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+		kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+		totalStates++;
+	}
+	// move back
+        toblock=fromblock+8;
+        val=getBlockVal(state,toblock);
+	if(fromblock<7 && (val==0 || (val>=start && val<=end)))
+	{
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+	}
+	// move left
+        toblock=fromblock-1;
+        val=getBlockVal(state,toblock);
+	if(fromblock%8>0 && (val==0 || (val>=start && val<=end)))
+	{
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+	}
+	// move right
+        toblock=fromblock+1;
+        val=getBlockVal(state,toblock);
+	if(fromblock%8<7 && (val==0 || (val>=start && val<=end)))
+	{
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+	}
+	// move north-east
+        toblock=fromblock-7;
+        val=getBlockVal(state,toblock);
+	if(fromblock/8>0 && fromblock%8<7 && (val==0 || (val>=start && val<=end)))
+	{
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+	}
+	// move north-west
+        toblock=fromblock-9;
+        val=getBlockVal(state,toblock);
+        if(fromblock/8>0 && fromblock%8>0  && (val==0 || (val>=start && val<=end)))
+        {
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+        }
+	// move south-east
+        toblock=fromblock+9;
+        val=getBlockVal(state,toblock);
+        if(fromblock/8<7 && fromblock%8<7 && (val==0 || (val>=start && val<=end)))
+        {
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+        }
+	// move south-west
+        toblock=fromblock+7;
+        val=getBlockVal(state,toblock);
+        if(fromblock/8<7 && fromblock%8>0 && (val==0 || (val>=start && val<=end)))
+        {
+                moves[totalStates]=new uint16_t[16];
+                for(int i=0;i<16;i++) moves[totalStates][i]=state[i];
+                kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
+                totalStates++;
+        }
+
+	(*newStates)=new uint16_t*[totalStates];
+	for(int i=0;i<totalStates;i++) (*newStates)[i]=moves[i];
+	printf("King at %d block can move %d moves\n",fromblock,totalStates);
         return totalStates;
 }
 
@@ -205,7 +346,7 @@ int moveKnight(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
         return totalStates;
 }
 
-int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates)
+int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool moveQueen)
 {
         int totalStates=0,sMoves=0,bMoves=0,lMoves=0,rMoves=0;
 	uint16_t **sStates,**bStates,**rStates,**lStates;
@@ -235,8 +376,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
 			for(int i=0;i<16;i++) sStates[sMoves][i]=state[i];
 	                removePiece(sStates[sMoves],fromblock);
         	        if(moveWhite)
-                	        addPiece(sStates[sMoves],toblock,1);
-	                else addPiece(sStates[sMoves],toblock,7);		
+			{
+				if(moveQueen) addPiece(sStates[sMoves],toblock,5);
+                	        else addPiece(sStates[sMoves],toblock,1);
+			}
+	                else 
+			{
+				if(moveQueen) addPiece(sStates[sMoves],toblock,11);
+				else addPiece(sStates[sMoves],toblock,7);		
+			}
 //			printState(sStates[sMoves]);
 			sMoves++;
 		}
@@ -247,8 +395,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         removePiece(sStates[sMoves],fromblock);
 			removePiece(sStates[sMoves],toblock);
                         if(moveWhite)
-                                addPiece(sStates[sMoves],toblock,1);
-                        else addPiece(sStates[sMoves],toblock,7);  
+			{
+				if(moveQueen) addPiece(sStates[sMoves],toblock,5);
+                                else addPiece(sStates[sMoves],toblock,1);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(sStates[sMoves],toblock,11);
+				else addPiece(sStates[sMoves],toblock,7);  
+			}
 //			printState(sStates[sMoves]);
 			sMoves++;
 			break;
@@ -268,8 +423,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         for(int i=0;i<16;i++) bStates[bMoves][i]=state[i];
                         removePiece(bStates[bMoves],fromblock);
                         if(moveWhite)
-                                addPiece(bStates[bMoves],toblock,1);
-                        else addPiece(bStates[bMoves],toblock,7);
+			{
+				if(moveQueen) addPiece(bStates[bMoves],toblock,5);
+                                else addPiece(bStates[bMoves],toblock,1);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(bStates[bMoves],toblock,11);
+				else addPiece(bStates[bMoves],toblock,7);
+			}
                         bMoves++;
 		}
                 else if(val<=end && val>=start)
@@ -279,8 +441,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         removePiece(bStates[bMoves],fromblock);
 			removePiece(bStates[bMoves],toblock);
                         if(moveWhite)
-                                addPiece(bStates[bMoves],toblock,1);
-                        else addPiece(bStates[bMoves],toblock,7);
+			{
+				if(moveQueen) addPiece(bStates[bMoves],toblock,5);
+                                else addPiece(bStates[bMoves],toblock,1);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(bStates[bMoves],toblock,11);
+				else addPiece(bStates[bMoves],toblock,7);
+			}
 
                         bMoves++;
                         break;
@@ -299,8 +468,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         for(int i=0;i<16;i++) rStates[rMoves][i]=state[i];
                         removePiece(rStates[rMoves],fromblock);
                         if(moveWhite)
-                                addPiece(rStates[rMoves],toblock,1);
-                        else addPiece(rStates[rMoves],toblock,7);
+			{
+				if(moveQueen) addPiece(rStates[rMoves],toblock,5);
+                                else addPiece(rStates[rMoves],toblock,1);
+			}
+                        else 
+			{ 
+				if(moveQueen) addPiece(rStates[rMoves],toblock,11);
+				else addPiece(rStates[rMoves],toblock,7);
+			}
 
                         rMoves++;
 		}
@@ -311,8 +487,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         removePiece(rStates[rMoves],fromblock);
 			removePiece(rStates[rMoves],toblock);
                         if(moveWhite)
-                                addPiece(rStates[rMoves],toblock,1);
-                        else addPiece(rStates[rMoves],toblock,7);
+			{
+				if(moveQueen) addPiece(rStates[rMoves],toblock,5);
+                                else addPiece(rStates[rMoves],toblock,1);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(rStates[rMoves],toblock,11);
+				else addPiece(rStates[rMoves],toblock,7);
+			}
 
                         rMoves++;
                         break;
@@ -331,8 +514,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         for(int i=0;i<16;i++) lStates[lMoves][i]=state[i];
                         removePiece(lStates[lMoves],fromblock);
                         if(moveWhite)
-                                addPiece(lStates[lMoves],toblock,1);
-                        else addPiece(lStates[lMoves],toblock,7);
+			{
+				if(moveQueen) addPiece(lStates[lMoves],toblock,5);
+                                else addPiece(lStates[lMoves],toblock,1);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(lStates[lMoves],toblock,11);
+				else addPiece(lStates[lMoves],toblock,7);
+			}
 
                         lMoves++;
 		}
@@ -343,8 +533,15 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                         removePiece(lStates[lMoves],fromblock);
 			removePiece(lStates[lMoves],toblock);
                         if(moveWhite)
-                                addPiece(lStates[lMoves],toblock,1);
-                        else addPiece(lStates[lMoves],toblock,7);
+			{
+				if(moveQueen) addPiece(lStates[lMoves],toblock,5);
+                                else addPiece(lStates[lMoves],toblock,1);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(lStates[lMoves],toblock,11);
+				else addPiece(lStates[lMoves],toblock,7);
+			}
 
                         lMoves++;
                         break;
@@ -363,7 +560,7 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
         return totalStates;
 }
 
-int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates)
+int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool moveQueen)
 {
         int totalStates=0,neMoves=0,nwMoves=0,seMoves=0,swMoves=0;
         uint16_t **neStates,**nwStates,**seStates,**swStates;
@@ -389,33 +586,45 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                 uint16_t val=getBlockVal(state,toblock);
                 if(val==0)
                 {
-                        seStates[seMoves]=new uint16_t[16];
-                        for(int i=0;i<16;i++) seStates[seMoves][i]=state[i];
-                        removePiece(seStates[seMoves],fromblock);
+                        neStates[neMoves]=new uint16_t[16];
+                        for(int i=0;i<16;i++) neStates[neMoves][i]=state[i];
+                        removePiece(neStates[neMoves],fromblock);
                         if(moveWhite)
-                                addPiece(seStates[seMoves],toblock,3);
-                        else addPiece(seStates[seMoves],toblock,9);
-
-                        seMoves++;
+			{
+                                if(moveQueen) addPiece(neStates[neMoves],toblock,5);
+				else addPiece(neStates[neMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(neStates[neMoves],toblock,11);
+				else addPiece(neStates[neMoves],toblock,9);
+			}
+	
+                        neMoves++;
                 }
                 else if(val<=end && val>=start)
                 {
-                        seStates[seMoves]=new uint16_t[16];
-                        for(int i=0;i<16;i++) seStates[seMoves][i]=state[i];
-                        removePiece(seStates[seMoves],fromblock);
-                        removePiece(seStates[seMoves],toblock);
+                        neStates[neMoves]=new uint16_t[16];
+                        for(int i=0;i<16;i++) neStates[neMoves][i]=state[i];
+                        removePiece(neStates[neMoves],fromblock);
+                        removePiece(neStates[neMoves],toblock);
                         if(moveWhite)
-                                addPiece(seStates[seMoves],toblock,3);
-                        else addPiece(seStates[seMoves],toblock,9);
-
-                        seMoves++;
+			{
+                                if(moveQueen) addPiece(neStates[neMoves],toblock,5);
+				else addPiece(neStates[neMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(neStates[neMoves],toblock,11);
+				else addPiece(neStates[neMoves],toblock,9);
+			}
+                        neMoves++;
                         break;
                 }
                 else break;//the path is blocked
 		if(toblock%8==7 || toblock/8==0) break;
                 toblock-=7;
         }
-	
 	// north-west moves
         toblock=fromblock-9;
         while(toblock<64 && toblock>=0)
@@ -427,8 +636,15 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                         for(int i=0;i<16;i++) nwStates[nwMoves][i]=state[i];
                         removePiece(nwStates[nwMoves],fromblock);
                         if(moveWhite)
-                                addPiece(nwStates[nwMoves],toblock,3);
-                        else addPiece(nwStates[nwMoves],toblock,9);
+                        {
+                                if(moveQueen) addPiece(nwStates[nwMoves],toblock,5);
+                                else addPiece(nwStates[nwMoves],toblock,3);
+                        }
+                        else 
+                        {
+                                if(moveQueen) addPiece(nwStates[nwMoves],toblock,11);
+                                else addPiece(nwStates[nwMoves],toblock,9);
+                        }
 
                         nwMoves++;
                 }
@@ -439,8 +655,15 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                         removePiece(nwStates[nwMoves],fromblock);
                         removePiece(nwStates[nwMoves],toblock);
                         if(moveWhite)
-                                addPiece(nwStates[nwMoves],toblock,3);
-                        else addPiece(nwStates[nwMoves],toblock,9);
+			{
+				if(moveQueen) addPiece(nwStates[nwMoves],toblock,5);
+                                else addPiece(nwStates[nwMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(nwStates[nwMoves],toblock,11);
+				else addPiece(nwStates[nwMoves],toblock,9);
+			}
 
                         nwMoves++;
                         break;
@@ -449,7 +672,6 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
 		if(toblock%8==0 || toblock/8==0) break;
                 toblock-=9;
         }
-
 	// south-east moves
         toblock=fromblock+9;
         while(toblock<64 && toblock>=0)
@@ -461,8 +683,15 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                         for(int i=0;i<16;i++) seStates[seMoves][i]=state[i];
                         removePiece(seStates[seMoves],fromblock);
                         if(moveWhite)
-                                addPiece(seStates[seMoves],toblock,3);
-                        else addPiece(seStates[seMoves],toblock,9);
+			{
+				if(moveQueen) addPiece(seStates[seMoves],toblock,5);
+                                else addPiece(seStates[seMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(seStates[seMoves],toblock,11);
+				else addPiece(seStates[seMoves],toblock,9);
+			}
 
                         seMoves++;
                 }
@@ -473,8 +702,15 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                         removePiece(seStates[seMoves],fromblock);
                         removePiece(seStates[seMoves],toblock);
                         if(moveWhite)
-                                addPiece(seStates[seMoves],toblock,3);
-                        else addPiece(seStates[seMoves],toblock,9);
+			{
+				if(moveQueen) addPiece(seStates[seMoves],toblock,5);
+                                else addPiece(seStates[seMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(seStates[seMoves],toblock,11);	
+				else addPiece(seStates[seMoves],toblock,9);
+			}
 
                         seMoves++;
                         break;
@@ -483,7 +719,6 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
 		if(toblock%8==7 || toblock/8==7) break;
                 toblock+=9;
         }
-
 	// south-west moves
         toblock=fromblock+7;
         while(toblock<64 && toblock>=0)
@@ -495,8 +730,15 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                         for(int i=0;i<16;i++) swStates[swMoves][i]=state[i];
                         removePiece(swStates[swMoves],fromblock);
                         if(moveWhite)
-                                addPiece(swStates[swMoves],toblock,3);
-                        else addPiece(swStates[swMoves],toblock,9);
+			{
+				if(moveQueen) addPiece(swStates[swMoves],toblock,5);
+                                else addPiece(swStates[swMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(swStates[swMoves],toblock,11);
+				else addPiece(swStates[swMoves],toblock,9);
+			}
 
                         swMoves++;
                 }
@@ -507,8 +749,15 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
                         removePiece(swStates[swMoves],fromblock);
                         removePiece(swStates[swMoves],toblock);
                         if(moveWhite)
-                                addPiece(swStates[swMoves],toblock,3);
-                        else addPiece(swStates[swMoves],toblock,9);
+			{
+				if(moveQueen) addPiece(swStates[swMoves],toblock,5);
+                                else addPiece(swStates[swMoves],toblock,3);
+			}
+                        else 
+			{
+				if(moveQueen) addPiece(swStates[swMoves],toblock,11);
+				else addPiece(swStates[swMoves],toblock,9);
+			}
 
                         swMoves++;
                         break;
@@ -649,9 +898,13 @@ int movePawn(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
         }
 
 //if((*newStates)[1]==NULL) 
-	(*newStates)=new uint16_t*[totalStates];
-	if(step1Fwd) (*newStates)[0]=oneStep;
-	if(step2Fwd) (*newStates)[1]=twoStep;
+        (*newStates)=new uint16_t*[totalStates];
+        int cc=0;
+        if(step1Fwd) (*newStates)[cc++]=oneStep;
+        if(step2Fwd) (*newStates)[cc++]=twoStep;
+        if(leftKill) (*newStates)[cc++]=lkill;
+        if(rightKill) (*newStates)[cc++]=rkill;
+
 //	printState(twoStep);
 //	printState(*newStates[0]);
 	printf("Pawn at %d block can move %d moves\n",fromblock,totalStates);
@@ -704,14 +957,14 @@ int move(uint16_t *state,bool moveWhite)
 			{
 				if(i==49) printf("A white piece at %d\n",val);
 				uint16_t **newstates;
-        			if(val==1) newStates=moveRook(state,moveWhite,i,&newstates);
+        			if(val==1) newStates=moveRook(state,moveWhite,i,&newstates,false);
 			        else if(val==2) newStates=moveKnight(state,moveWhite,i,&newstates);
-			        else if(val==3) newStates=moveBishop(state,moveWhite,i,&newstates);
-			        else if(val==4) newStates=moveKing(state,moveWhite,i);
-			        else if(val==5) newStates=moveQueen(state,moveWhite,i);
+			        else if(val==3) newStates=moveBishop(state,moveWhite,i,&newstates,false);
+			        else if(val==4) newStates=moveKing(state,moveWhite,i,&newstates);
+			        else if(val==5) newStates=moveQueen(state,moveWhite,i,&newstates);
 			        else if(val==6) newStates=movePawn(state,moveWhite,i,&newstates);				
 				allowMoves+=newStates;
-				if(newStates>0)
+				if(i==54 && newStates>0)
 				{
 //					printf("DDDDDDDDDDDDDDDDDDDDd newStates=%d\n",newStates);
 					for(int i=0;i<newStates;i++)
@@ -732,14 +985,14 @@ int move(uint16_t *state,bool moveWhite)
                         {
                                 if(i==8) printf("A white piece at %d\n",val);
                                 uint16_t **newstates;
-                                if(val==7) newStates=moveRook(state,moveWhite,i,&newstates);
+                                if(val==7) newStates=moveRook(state,moveWhite,i,&newstates,false);
                                 else if(val==8) newStates=moveKnight(state,moveWhite,i,&newstates);
-                                else if(val==9) newStates=moveBishop(state,moveWhite,i,&newstates);
-                                else if(val==10) newStates=moveKing(state,moveWhite,i);
-                                else if(val==11) newStates=moveQueen(state,moveWhite,i);
+                                else if(val==9) newStates=moveBishop(state,moveWhite,i,&newstates,false);
+                                else if(val==10) newStates=moveKing(state,moveWhite,i,&newstates);
+                                else if(val==11) newStates=moveQueen(state,moveWhite,i,&newstates);
                                 else if(val==12) newStates=movePawn(state,moveWhite,i,&newstates);
                                 allowMoves+=newStates;
-                                if(newStates>0)
+                                if(i==47 && newStates>0)
                                 {
 //                                        printf("DDDDDDDDDDDDDDDDDDDDd i=%d newStates=%d\n",i,newStates);
                                       for(int i=0;i<newStates;i++)
@@ -758,9 +1011,12 @@ int main()
 //	Start config
 //	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
 ******************************************************************************************/
-	uint16_t state[16]={30874,47495,0,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
+//	uint16_t state[16]={30874,47495,0,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
 //	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,0,26214,4660,21281};
+//	uint16_t state[16]={30874,47495,0,0,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
+//	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,0,0,4660,21281};
+	uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
 //	printState(state);
-	move(state,false);
+	move(state,true);
 	return 0;
 }
