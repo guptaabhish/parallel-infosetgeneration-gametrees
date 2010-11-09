@@ -1,0 +1,71 @@
+module searchEngine
+{
+	readonly CProxy_SearchConductor searchEngineProxy;
+	readonly CProxy_SearchGroup groupProxy;
+
+        readonly int sequential_threshold;
+
+        readonly size_t msg_offset;
+
+
+#ifdef USING_CONTROLPOINTS
+    include "controlPoints.h";
+
+    readonly CProxy_BThreshold threshGroup;    
+    message ThreshMsg;
+
+    /* for control point */
+    group BThreshold {
+        entry BThreshold();
+        entry [expedited] void changeThreshold(ThreshMsg *msg);
+    };
+
+#endif
+
+    message countMsg;
+	message DUMMYMSG;
+
+    message SearchNodeMsg {
+		char objectDump[];
+	};
+	
+	mainchare SearchConductor
+	{
+		entry SearchConductor( CkArgMsg *m );
+		entry [threaded] void allSearchNodeDone(DUMMYMSG *msg);
+		
+		entry void start();
+		entry void groupInitComplete();
+		entry void resetFactory();
+        entry [expedited] void foundSolution();
+		entry void newSearchNode();
+#ifdef USING_CONTROLPOINTS
+        entry  void controlChange(controlPointMsg* msg);
+#endif
+    };
+
+#ifdef FIRST_SOLUTION
+	nodegroup SearchGroup
+#else
+        group SearchGroup
+#endif
+        {
+          entry SearchGroup(DUMMYMSG *);
+          entry void sendCounts(DUMMYMSG *);
+          entry void init();
+          entry void setParallelLevel( int );
+          entry void searchDepthChange( int, CkCallback &cb );
+#ifdef FIRST_SOLUTION
+          entry [immediate] void killSearch();
+          entry [exclusive] void childCount(countMsg *);
+#else
+          entry void childCount(countMsg *);
+#endif
+        };
+	
+	chare SearchNode
+	{
+		entry SearchNode( SearchNodeMsg *msg );
+	};
+
+};

@@ -1,0 +1,8 @@
+mainmodule hc
+{
+    extern module searchEngine;
+
+    mainchare Hc{
+      entry Hc(CkArgMsg *m);
+    }
+}

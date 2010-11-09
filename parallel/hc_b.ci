@@ -1,0 +1,11 @@
+mainmodule hc
+{
+    extern module searchEngine;
+    readonly int vertices;
+    readonly vector<int> indices;
+    readonly vector<int> edges;
+
+    mainchare Hc{
+      entry Hc(CkArgMsg *m);
+    }
+}
