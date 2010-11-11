@@ -1259,10 +1259,25 @@ void generateMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, uint1
   } 
 }
 
+// This version is for use when you just want to check make sure the "blocked" and "checked" bits are cleared
 bool isLegal(const uint16_t& move)
 {
   static uint16_t mask = 0xC000; // 1100000000000000
   return !(move & mask); // move & mask is non-zero if the move is blocked or would would leave player in check
+}
+
+// This version ignores the blocked and checked bits from move and actually checks to make sure that the from/to
+// combination is a legitimate move from state
+// TODO
+bool isLegal(uint16_t* state, bool whiteMove, const uint16_t& move)
+{
+  return true;
+}
+
+// TODO
+bool isAttemptable(uint16_t* state, bool whiteMove, const uint16_t& move)
+{
+  return true;
 }
 
 bool hasLegalMove(uint16_t* moves, int nMoves)
@@ -1310,6 +1325,83 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     } else {
       failedMoves[depth].insert(move); // Note that this illegal move was attempted 
     }
+  }
+}
+
+// TODO
+bool samePawnTries(uint16_t* state1, uint16_t* state2)
+{
+  return true;
+}
+
+// TODO
+bool sameCheckStatus(uint16_t* state1, uint16_t* state2)
+{
+  return true;
+}
+
+// Generate a list of all the sequences of moves that are consistent with the observations that would have been received by the player denoted by 
+// whitePerspective (T=white, F=black).  The moveHistory contains the list of all the successful moves (even indexed moves for white, odds for black)
+// and the associated set of unsuccessful moves are in failedMoves, i.e., failedMoves[i] is the set of all unsuccessful moves that were tried
+// before the move that was ultimately successful at time i (the successful move is moveHistory[i]).  <moveHistory,failedMoves> together does not include 
+// the actual observations, but we will recreate them on the fly by updating trueState with the actual move as we go along in the search tree.
+// At levels in the recursion where whiteMove == whitePerspective, we can act as though we know exactly which moves were attempted and which move was
+// actually made (because we made those moves).  So we verify that every failedMove is at least attemptable in the possState.
+// At the levels where whiteMove != whitePerspective, we must act as though we know the number of failed moves, but not the specific failed Moves.
+// In order to continue with the recursion, we must be able to verify that the number of attemptable moves in possState is strictly greater than the
+// number of moves in possState.
+// Since both players would hear the moderator's declarations about pawn tries and "check", we do not continue unless the pawn tries and check status
+// of possState and trueState are equivalent.
+void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
+  uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
+{
+
+  if (depth == maxdepth) {
+	// found a goal state
+	//processMoveHistory(failedMoves,moveHistory);
+  }
+  int nMoves = 0;
+  uint16_t newPossState[16]; 
+  uint16_t newTrueState[16]; 
+  applyMove(trueState,newTrueState,moveHistory[depth]);
+
+  findAttemptableMoves(possState, whiteMove, layers[depth], nMoves);
+  assert (nMoves < NMOVES); // 
+
+  if (!samePawnTries(trueState, possState)) return; 
+  if (!sameCheckStatus(trueState, possState)) return; 
+
+  if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
+    SetMove& failures = failedMoves[depth];
+    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
+      uint16_t move = *itr ;
+      if (!isAttemptable(possState,move, whiteMove)) { // One of the failed moves is not even attemptable in this state
+	return;
+      } else if (isLegal(possState, move, whiteMove)) { // One of the failed moves would have succeeded in this state
+	return;
+      }
+    }
+    // If we get to this point, all of the failed moves are consistent
+    // We know exactly what the actual move was; make it
+    uint16_t& actualMove = moveHistory[depth];
+    if (!isLegal(possState,whiteMove,actualMove)) return;
+    applyMove(possState,newPossState,moveHistory[depth]);
+    possHistory[depth] = actualMove;
+    generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
+      moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
+  } else { // We are considering the possibilities for the opponent's moves
+    // Ensure that there are enough attemptable moves in the state to match the observed number of failed attempts
+    if ((unsigned)nMoves <= failedMoves[depth].size()) return; 
+    for (int i = 0; i < nMoves; i++) {
+      uint16_t& move = layers[depth][i];
+      if (isLegal(possState,whiteMove,move)) { // Obviously, we can only execute the moves that are actually legal from this state
+        applyMove(possState,newPossState,moveHistory[depth]);
+        possHistory[depth] = move;
+        generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
+          moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
+      }
+    }
+
   }
 }
 
