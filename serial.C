@@ -2,12 +2,173 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <cassert>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <set>
+#include <vector>
+#include <string.h> // memcpy
+using namespace std;
+
+typedef set< uint16_t > SetMove;
+typedef vector< SetMove > VecSetMove;
+
+#define IsFree(a,ind)  !( (a[(ind / 32)]) & (1<<(ind % 32)) )
+#define Set(a,ind) a[(ind/32)] = ( a[(ind/32)] | (1<<(ind % 32)) )
+#define Reset(a,ind) a[(ind/32)] = ( a[(ind/32)] & (~(1<<(ind % 32))) )
+
+#define IsFree16(a,ind)  !( (a[(ind / 16)]) & (1<<(ind % 16)) )
+#define Set16(a,ind) a[(ind/16)] = ( a[(ind/16)] | (1<<(ind % 16)) )
+#define Reset16(a,ind) a[(ind/16)] = ( a[(ind/16)] & (~(1<<(ind % 16))) )
+
+const int NMOVES = 1000;
+const int NLAYERS = 60;
+const int STATESIZE = 16;
 
 uint16_t getBlockVal(uint16_t*,int);
 void removePiece(uint16_t *state,uint16_t fromblock);
 void addPiece(uint16_t *state,uint16_t toblock,uint16_t pieceVal);
+void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock);
 int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
 int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
+
+// MDR
+string disp(int* x, int max)
+{
+  ostringstream os;
+  for (int i = max - 1; i >= 0; i--) {
+    os << ((IsFree(x,i)) ? "0" : "1") ; 
+  }
+  return os.str();
+}
+
+string disp16(uint16_t* x, int max)
+{
+  ostringstream os;
+  for (int i = max - 1; i >= 0; i--) {
+    os << ((IsFree16(x,i)) ? "0" : "1") ; 
+  }
+  return os.str();
+}
+
+uint16_t encodeMove(uint16_t from, uint16_t to, bool blocked, bool checked)
+{
+  uint16_t result = 0;
+  result = (blocked << 15) | (checked << 14) | (from << 6) | to ;
+}
+
+void decodeMove(uint16_t move, uint16_t& from, uint16_t& to, bool& blocked, bool& checked)
+{
+  blocked = (1 << 15) & move; 
+  checked = (1 << 14) & move; 
+  from = (4032 & move) >> 6; 
+  to = 63 & move; 
+}
+
+void dispMove(uint16_t from, uint16_t to, bool blocked, bool checked)
+{
+  cout << "from: " << from << " to: " << to << " blocked: " << blocked << " checked: " << checked << endl;
+}
+
+void dispMove(uint16_t move)
+{
+  uint16_t from ;
+  uint16_t to;
+  bool checked;
+  bool blocked;
+  decodeMove (move, from, to, blocked, checked);
+  dispMove(from,to,blocked,checked);
+
+}
+
+
+uint16_t getCode(char piece)
+{
+  switch (piece) {
+    case '-' : return 0;
+    case 'r' : return 1;
+    case 'n' : return 2;
+    case 'b' : return 3;
+    case 'k' : return 4;
+    case 'q' : return 5;
+    case 'p' : return 6;
+    case 'R' : return 7;
+    case 'N' : return 8;
+    case 'B' : return 9;
+    case 'K' : return 10;
+    case 'Q' : return 11;
+    case 'P' : return 12;
+    default: assert(false);
+  }
+}
+
+void fillBoard(uint16_t* state, const string& sState)
+{
+  assert (sState.size() == 64);
+  for (unsigned i = 0; i < sState.size(); i++) {
+    addPiece(state,i,getCode(sState[i]));    
+  } 
+}
+
+string sampleState(int test)
+{
+  ostringstream os;
+  switch (test) {
+	case 0:
+    os <<  "RNBQKBNR"
+	<< "PPPPPPPP"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "pppppppp"
+	<< "rnbqkbnr";
+	break;
+	case 1:
+    os <<  "RK----rk"
+	<< "PP----qp"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------";
+	break;
+    default: assert(false);
+  }
+  return os.str();
+
+}
+
+// Don't copy over original state
+void applyMove(uint16_t* oldState, uint16_t* newState, uint16_t move)
+{
+  uint16_t from ;
+  uint16_t to;
+  bool checked;
+  bool blocked;
+  decodeMove (move, from, to, blocked, checked);
+  assert (!blocked);
+  assert (!checked);
+  memcpy(newState,oldState,sizeof(uint16_t)*16);
+  movePiece(newState,from,to);
+}
+
+// Apply move "in place."  Previous state is overwritten
+void applyMove(uint16_t* state, uint16_t move)
+{
+  uint16_t from;
+  uint16_t to;
+  bool checked;
+  bool blocked;
+  decodeMove (move, from, to, blocked, checked);
+  assert (!blocked);
+  assert (!checked);
+  movePiece(state,from,to);
+}
+
+// MDR
 
 void printPiece(uint16_t val)
 {
@@ -943,6 +1104,32 @@ void removePiece(uint16_t *state,uint16_t fromblock)
 	}
 }
 
+void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock)
+{
+	//printf("fromblock: %d toblock %d\n",fromblock,toblock);
+	int toElement = toblock/4;
+	int toOffset = toblock%4;
+	uint16_t destMask;
+        uint16_t pieceVal = getBlockVal(state,fromblock);
+	//printf("pieceval: %d \n",pieceVal);
+	removePiece(state,fromblock);
+	uint16_t pieceMask=pieceVal;
+	pieceMask=pieceMask<<((3-toOffset)*4);
+        switch (toOffset) {
+		case 0: destMask=4095; break;
+		case 1: destMask=61695; break;
+		case 2: destMask=65296; break;
+		case 3: destMask=65520; break;
+		default: assert(false);
+	}
+	//printf("destMask: %d pieceMask%d\n",destMask,pieceMask);
+	state[toElement]=(state[toElement]&destMask)|pieceMask;
+	if(getBlockVal(state,fromblock)!=0)
+	{
+		printf("ERROR: in removePiece()\n");exit(0);
+	}
+}
+
 int move(uint16_t *state,bool moveWhite)
 {
 	uint16_t allowMoves=0;
@@ -1005,6 +1192,127 @@ int move(uint16_t *state,bool moveWhite)
 
 }
 
+bool empty(uint16_t* state, uint16_t block)
+{
+  return getBlockVal(state,block) == 0;
+}
+
+bool ownPiece(uint16_t* state, uint16_t block, bool white)
+{
+  uint16_t val = getBlockVal(state,block);
+  return (white && (val > 0 && val < 7)) || (!white && (val >= 7 && val < 13));  
+}
+
+bool opponentPiece(uint16_t* state, uint16_t block, bool white)
+{
+  uint16_t val = getBlockVal(state,block);
+  return (!white && (val > 0 && val < 7)) || (white && (val >= 7 && val < 13));  
+}
+
+
+void findAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
+{
+  nMoves = 0;
+  for (int i = 0; i < 16; i++) {
+    for (int j = 0; j < 16; j++) {
+      if (i == j ) continue;
+      if (ownPiece(state,i,whiteMove) && !ownPiece(state,j,whiteMove)) {
+        moves[nMoves++] = encodeMove(i,j,false,false);
+      }
+    }
+  }
+}
+
+void tryAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
+{
+    uint16_t newState[16];
+  for (int i = 0; i < nMoves; i++) {
+    dispMove(moves[i]);
+    applyMove(state,newState,moves[i]);
+    printState(newState);
+  }
+}
+
+void generateMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, uint16_t** layers, int depth, int maxdepth)
+{
+  if (depth == maxdepth) {
+	//printState(state);
+    cout << "Begin Plausible move sequence: " << depth << endl;
+    for (int i = 0; i < depth; i++) {
+      cout << "Move #" << i;
+      dispMove(moveHistory[i]);
+    }
+    cout << "End Plausible move sequence: " << depth << endl;
+    return;
+  }
+  int nMoves = 0;
+  uint16_t newState[16];
+  findAttemptableMoves(state, whiteMove, layers[depth], nMoves);
+  assert (nMoves < NMOVES); // 
+  for (int i = 0; i < nMoves; i++) {
+    for (int j = 0; j < 3*depth; j++) cout << " ";
+    dispMove(layers[depth][i]);
+    applyMove(state,newState,layers[depth][i]);
+    //printState(newState);
+    moveHistory[depth] = layers[depth][i];
+    generateMoves(newState,!whiteMove,moveHistory,layers,depth+1,maxdepth);
+  } 
+}
+
+bool isLegal(const uint16_t& move)
+{
+  static uint16_t mask = 0xC000; // 1100000000000000
+  return !(move & mask); // move & mask is non-zero if the move is blocked or would would leave player in check
+}
+
+bool hasLegalMove(uint16_t* moves, int nMoves)
+{
+  for (int i = 0; i < nMoves; i++) {
+    if (isLegal(moves[i])) {
+      return true;
+    }
+  }
+  return false; // None of the moves was doable
+}
+void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* moveHistory, int nMoves)
+{
+  cout << "Moves: " << endl;
+  printState(state);
+  for (unsigned i = 0; i < nMoves; i++) {
+    cout << "Failed moves: " << failedMoves[i].size() << endl;
+    uint16_t& move =  moveHistory[i];
+    dispMove(move);
+    assert(isLegal(move));
+    applyMove(state, move);
+    printState(state);
+  }
+}
+
+int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
+{
+  if (depth == maxdepth) {
+	//printState(state);
+     return depth;
+	//processMoveHistory(failedMoves,moveHistory);
+  }
+  int nMoves = 0;
+  uint16_t newState[16]; 
+  findAttemptableMoves(state, whiteMove, layers[depth], nMoves);
+  assert (nMoves < NMOVES); // 
+  if (!hasLegalMove(layers[depth],nMoves)) return depth; // No legal mvoes from this state
+  while (true) { // Keep trying random moves until a legal one is executed
+    int attemptedMoveIndex = rand() % nMoves;
+    uint16_t& move = layers[depth][attemptedMoveIndex];
+    if (isLegal(move)) {
+      applyMove(state,newState,move);
+      moveHistory[depth] = move;
+      return generateRandomMoves(newState,!whiteMove,moveHistory,failedMoves,layers,depth+1,maxdepth);
+    } else {
+      failedMoves[depth].insert(move); // Note that this illegal move was attempted 
+    }
+  }
+}
+
 int main()
 {
 /*******************************************************************************************
@@ -1015,7 +1323,29 @@ int main()
 //	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,0,26214,4660,21281};
 //	uint16_t state[16]={30874,47495,0,0,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
 //	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,0,0,4660,21281};
-	uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
+	//uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
+	uint16_t attemptableMoves[NMOVES*NLAYERS];
+        uint16_t moveHistory[NLAYERS];
+	uint16_t* moveList[NLAYERS];
+        for (int i = 0; i < NLAYERS; i++) {
+		moveList[i] = &attemptableMoves[i*NMOVES];
+        }
+	int nMovesByLayer[NLAYERS];
+        VecSetMove failedMoves(NLAYERS);
+	uint16_t state[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        int nMoves = 0;
+ 	string s = sampleState(1);
+        fillBoard(state,s);
+	//printState(state);	
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
+        processMoveHistory(state,failedMoves,moveHistory,nExecutedMoves);
+	//findAttemptableMoves(state,true,attemptableMoves,nMoves);
+	//tryAttemptableMoves(state,true,attemptableMoves,nMoves);
+	//movePiece(state,0,15);	
+	//movePiece(state,63,47);	
+	//movePiece(state,47,46);	
+	//movePiece(state,60,0);	
+	//printState(state);	
 
 /*  Checking pawn kill */
 //	uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
@@ -1030,6 +1360,7 @@ int main()
 /*  Checking Queen kill */
 //  uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,11,26214,26214,4660,21281};
 //	printState(state);
-	move(state,true);
+	//move(state,true);
+        cout << "Made it this far" << endl;
 	return 0;
 }
