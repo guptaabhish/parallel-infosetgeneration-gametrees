@@ -28,7 +28,7 @@ const long long ONE = 1;
 #define Reset16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] & (~(1<<((ind) % 16))) )
 
 const int NMOVES = 1000;
-const int NLAYERS = 60;
+const int NLAYERS = 3;
 const int STATESIZE = 16;
 
 uint16_t getBlockVal(uint16_t*,int);
@@ -37,6 +37,7 @@ void addPiece(uint16_t *state,uint16_t toblock,uint16_t pieceVal);
 void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock);
 int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
 int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
+void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves);
 
 // MDR
 string disp(int* x, int max)
@@ -69,6 +70,18 @@ void decodeMove(uint16_t move, uint16_t& from, uint16_t& to, bool& blocked, bool
   checked = (1 << 14) & move; 
   from = (4032 & move) >> 6; 
   to = 63 & move; 
+}
+
+string decodeMove(uint16_t move)
+{
+  uint16_t from ;
+  uint16_t to;
+  bool checked;
+  bool blocked;
+  decodeMove (move, from, to, blocked, checked);
+  ostringstream os;
+  os << "(" << from << "," << to << ")";
+  return os.str();
 }
 
 void dispMove(uint16_t from, uint16_t to, bool blocked, bool checked)
@@ -121,12 +134,12 @@ string sampleState(int test)
   ostringstream os;
   switch (test) {
 	case 0:
-    os <<  "R-BQKBNR"
+    os <<  "RNBQKBNR"
 	<< "PPPPPPPP"
 	<< "--------"
 	<< "--------"
 	<< "--------"
-	<< "-N------"
+	<< "--------"
 	<< "pppppppp"
 	<< "rnbqkbnr";
 	break;
@@ -1294,10 +1307,16 @@ void generateMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, uint1
   } 
 }
 
+bool isPawnTry(const uint16_t& move)
+{
+  const static uint16_t mask = 0x2000; // 0010000000000000
+  return move & mask; // move & mask is non-zero if the move is blocked or would would leave player in check
+}
+
 // This version is for use when you just want to check make sure the "blocked" and "checked" bits are cleared
 bool isLegal(const uint16_t& move)
 {
-  static uint16_t mask = 0xC000; // 1100000000000000
+  const static uint16_t mask = 0xC000; // 1100000000000000
   return !(move & mask); // move & mask is non-zero if the move is blocked or would would leave player in check
 }
 
@@ -1347,7 +1366,7 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
   }
   int nMoves = 0;
   uint16_t newState[16]; 
-  findAttemptableMoves(state, whiteMove, layers[depth], nMoves);
+  generateAttemptableMoves(state, whiteMove, layers[depth], nMoves);
   assert (nMoves < NMOVES); // 
   if (!hasLegalMove(layers[depth],nMoves)) return depth; // No legal mvoes from this state
   while (true) { // Keep trying random moves until a legal one is executed
@@ -1394,13 +1413,18 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
   if (depth == maxdepth) {
 	// found a goal state
 	//processMoveHistory(failedMoves,moveHistory);
+        for (int i = 0; i < depth; i++) {
+	  cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+        }
+        cout << endl;
+	return;
   }
-  int nMoves = 0;
   uint16_t newPossState[16]; 
   uint16_t newTrueState[16]; 
   applyMove(trueState,newTrueState,moveHistory[depth]);
 
-  findAttemptableMoves(possState, whiteMove, layers[depth], nMoves);
+  int nMoves = 0;
+  generateAttemptableMoves(possState, whiteMove, layers[depth], nMoves);
   assert (nMoves < NMOVES); // 
 
   if (!samePawnTries(trueState, possState)) return; 
@@ -1436,19 +1460,16 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
           moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
       }
     }
-
   }
 }
 
 
-long long rooks[64];
-long long bishops[64];
-long long knights[64];
+long long rankFileDests[64];
+long long diagonalDests[64];
+long long knightDests[64];
 
 void north(long long* x, int row, int col)
 {
-  assert (col >= 0);
-  assert (col <= 7);
   if (row >=0) {
     Set64(x,row*8+col);
     north(x,row-1,col); 
@@ -1457,8 +1478,6 @@ void north(long long* x, int row, int col)
 
 void south(long long* x, int row, int col)
 {
-  assert (col >= 0);
-  assert (col <= 7);
   if (row <=7) {
     Set64(x,row*8+col);
     south(x,row+1,col); 
@@ -1467,13 +1486,8 @@ void south(long long* x, int row, int col)
 
 void east(long long* x, int row, int col)
 {
-  //cout << "row: " << row << " col: " << col << endl;
-  assert (row >= 0);
-  assert (row <= 7);
   if (col <=7) {
     Set64(x,row*8+col);
-    //*x = *x | (ONE << (row*8+col));
-    //cout << "*x: " << *x << endl;
     east(x,row,col+1); 
   }
 }
@@ -1528,7 +1542,7 @@ void fillKnight(long long* x, int row, int col)
   }
 }
 
-void populateRook(long long* x, int i)
+void enumerateRankFile(long long* x, int i)
 {
   int row = i / 8;
   int col = i % 8;
@@ -1538,7 +1552,7 @@ void populateRook(long long* x, int i)
   west(x,row,col-1);
 }
 
-void populateBishop(long long* x, int i)
+void enumerateDiagonals(long long* x, int i)
 {
   int row = i / 8;
   int col = i % 8;
@@ -1548,7 +1562,7 @@ void populateBishop(long long* x, int i)
   southeast(x,row+1,col+1);
 }
 
-void knightSpots(long long* x, int i)
+void enumerateKnight(long long* x, int i)
 {
   int row = i / 8;
   int col = i % 8;
@@ -1562,16 +1576,16 @@ void knightSpots(long long* x, int i)
   fillKnight(x,row-2,col+1);
 }
 
-void fill()
+void enumerateSrcDestPairs()
 {
   for (int i = 0; i < 64; i++) {
-    populateRook(rooks+i,i);
-    populateBishop(bishops+i,i);
-    knightSpots(knights+i,i);
+    enumerateRankFile(rankFileDests+i,i);
+    enumerateDiagonals(diagonalDests+i,i);
+    enumerateKnight(knightDests+i,i);
   }
 }
 
-void dispAccs(long long* base, int i)
+void displayAccessibleSquares(long long* base, int i)
 {
   uint16_t state[16];
   long long* x = base + i;
@@ -1586,22 +1600,10 @@ void dispAccs(long long* base, int i)
   printState(state);
 }
 
-//    case '-' : return 0;
-//    case 'r' : return 1;
-//    case 'n' : return 2;
-//    case 'b' : return 3;
-//    case 'k' : return 4;
-//    case 'q' : return 5;
-//    case 'p' : return 6;
-//    case 'R' : return 7;
-//    case 'N' : return 8;
-//    case 'B' : return 9;
-//    case 'K' : return 10;
-//    case 'Q' : return 11;
-//    case 'P' : return 12;
 
-bool rookable(uint16_t v) { return (v==1 || v== 4 || v == 5 || v == 7 || v == 10 || v == 11); }
-bool bishopable(uint16_t v) { return (v==3 || v== 4 || v == 5 || v == 9 || v == 10 || v == 11); }
+// TODO: Convert these to bit operations
+bool movesRankFile(uint16_t v) { return (v==1 || v== 4 || v == 5 || v == 7 || v == 10 || v == 11); }
+bool movesDiagonal(uint16_t v) { return (v==3 || v== 4 || v == 5 || v == 9 || v == 10 || v == 11); }
 bool isKing(uint16_t v) { return (v== 4 || v== 10);}
 bool isKnight(uint16_t v) { return (v== 2 || v== 8);}
 
@@ -1613,29 +1615,28 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
   static int8_t knightOffsets[] = {-17,-15,-10,-6,6,10,15,17};
   for (int src = 0; src < 64; src ++) {
     uint16_t pieceVal = getBlockVal(state,src);
-    uint16_t destPiece = 0;
     if (!pieceVal || opponentPiece(pieceVal,whiteMove)) continue;
-
-    //dispAccs(src);
-    long long* r = rooks + src;
-    //cout << "*r: " << *r << endl;
-    //for (int k = 63; k >= 0; k--) cout << (IsFree64(r,k) ? "0" : "1"); cout << "\n";
-    long long* b = bishops + src;
+    uint16_t destPiece = 0;
+    long long* r = rankFileDests + src;
+    long long* b = diagonalDests + src;
     bool blocked = false;
     int dest;
      
+    // Knight moves
     if (isKnight(pieceVal)) {
       for (int i = 0; i < 8; i++) {
         uint16_t dest = src + knightOffsets[i];
         if (dest > 63 || dest < 0) continue;
         if (!ownPiece(state,dest,whiteMove)) {
-          if (knights[src] & (ONE << dest)) {
-            printf("ksrc: %d dest: %d\n",src,dest);
+          if (knightDests[src] & (ONE << dest)) {
+            printf("knight   src: %d dest: %d\n",src,dest);
+            moves[nMoves++] = encodeMove(src,dest,false,false);
           }
         }
       } 
     }
-    if (rookable(pieceVal)) {
+    // Rook moves
+    if (movesRankFile(pieceVal)) {
       for (int dir = 0; dir < 4; dir++) { // N, E, S, W
         blocked = false;
         for (int off = 1; off < 8; off++) {
@@ -1651,14 +1652,16 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           }
           destPiece = getBlockVal(state,dest);
           if (ownPiece(destPiece,whiteMove)) break; 
-          printf("rsrc: %d dest: %d blocked: %d\n",src,dest,blocked);
+          printf("rooklike src: %d dest: %d blocked: %d\n",src,dest,blocked);
+          moves[nMoves++] = encodeMove(src,dest,blocked,false);
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
           if (isKing(pieceVal)) break;
         }
       }
     }
-    if (bishopable(pieceVal)) {
-      //dispAccs(bishops,src);
+    // Bishop moves
+    if (movesDiagonal(pieceVal)) {
+      //displayAccessibleSquares(diagonalDests,src);
       for (int dir = 0; dir < 4; dir++) { // NW, NE, SE, SW
         blocked = false;
         for (int off = 1; off < 8; off++) {
@@ -1667,28 +1670,33 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           if (IsFree64(b,dest)) break;
           destPiece = getBlockVal(state,dest);
           if (ownPiece(destPiece,whiteMove)) break; 
-          printf("bsrc: %d dest: %d blocked: %d\n",src,dest,blocked);
+          printf("diagonal src: %d dest: %d blocked: %d\n",src,dest,blocked);
+          moves[nMoves++] = encodeMove(src,dest,blocked,false);
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
           if (isKing(pieceVal)) break;
         }
       }
     }
-    if (pieceVal == 6 ) { // white pawn
-      dest = src - 8;
-      if (dest > 0) {
+    // Pawn moves
+    if (pieceVal == 6 || pieceVal == 12) { // pawns
+      dest = (pieceVal == 6) ? src - 8 : src + 8;
+      if (dest > 0 && dest < 64) {
         destPiece = getBlockVal(state,dest);
         blocked = opponentPiece(destPiece,whiteMove);
         if (!ownPiece(destPiece,whiteMove)) {
-          printf("psrc: %d dest: %d blocked: %d\n",src,dest,blocked);
+          printf("pawnmove src: %d dest: %d blocked: %d\n",src,dest,blocked);
+          moves[nMoves++] = encodeMove(src,dest,blocked,false);
         }
       }
       dest++;
-      if (dest > 0 && (bishops[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
-          printf("pc src: %d dest: %d \n",src,dest);
+      if (dest > 0 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
+          printf("pawncapt src: %d dest: %d \n",src,dest);
+          moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY
       }
       dest -= 2;
-      if (dest > 0 && (bishops[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
-          printf("pc src: %d dest: %d \n",src,dest);
+      if (dest > 0 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
+          printf("pawncapt src: %d dest: %d \n",src,dest);
+          moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13);
       }
     }
   }
@@ -1696,10 +1704,8 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 
 int main()
 {
-  fill();
-  //for (int i = 0; i < 64; i++) dispAccs(bishops,i);
-  //considerations();
-  //return 0;
+  enumerateSrcDestPairs();
+  //for (int i = 0; i < 64; i++) displayAccessibleSquares(diagonalDests,i);
 /*******************************************************************************************
 //	Start config
 //	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
@@ -1711,6 +1717,7 @@ int main()
 	//uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
 	uint16_t attemptableMoves[NMOVES*NLAYERS];
         uint16_t moveHistory[NLAYERS];
+        uint16_t possHistory[NLAYERS];
 	uint16_t* moveList[NLAYERS];
         for (int i = 0; i < NLAYERS; i++) {
 		moveList[i] = &attemptableMoves[i*NMOVES];
@@ -1721,10 +1728,17 @@ int main()
         int nMoves = 0;
  	string s = sampleState(0);
         fillBoard(state,s);
-        generateAttemptableMoves(state,false,moveList[0],nMoves);
+        //generateAttemptableMoves(state,true,moveList[0],nMoves);
 	//printState(state);	
-	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
-        //processMoveHistory(state,failedMoves,moveHistory,nExecutedMoves);
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
+        cout << nExecutedMoves << endl;
+	uint16_t statecopy[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        fillBoard(statecopy,s); 
+        processMoveHistory(statecopy,failedMoves,moveHistory,nExecutedMoves);
+	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
+        generateInformationSet(true, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+//void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
+ // uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
 	//findAttemptableMoves(state,true,attemptableMoves,nMoves);
 	//tryAttemptableMoves(state,true,attemptableMoves,nMoves);
 	//movePiece(state,0,15);	
