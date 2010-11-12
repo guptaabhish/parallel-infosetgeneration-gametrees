@@ -64,15 +64,20 @@ int moveQueen(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newS
 {
 	int totalStates=0,statesB,statesR;
 	uint16_t **newStatesB,**newStatesR;
+#ifdef DEBUG
 	printf("))))))))))))))))))))))))))))))))))0\n");
+#endif
 	//diagonal moves
 	statesB=moveBishop(state,moveWhite,fromblock,&newStatesB,true);
 	//straight moves
 	statesR=moveRook(state,moveWhite,fromblock,&newStatesR,true);
 	totalStates=statesB+statesR;
+	(*newStates)=new uint16_t*[totalStates];
 	for(int i=0;i<statesB;i++) (*newStates)[i]=newStatesB[i];
 	for(int i=0;i<statesR;i++) (*newStates)[i+statesB]=newStatesR[i];
+#ifdef DEBUG
 	printf("\n\nQueen at %d block can move %d moves\n",fromblock,totalStates);
+#endif
 	return totalStates;
 
 }
@@ -204,10 +209,12 @@ int moveKing(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
                 kingHelper(state,fromblock,moves[totalStates],toblock,moveWhite);
                 totalStates++;
         }
-
+		//TODO: Fix it
 	(*newStates)=new uint16_t*[totalStates];
 	for(int i=0;i<totalStates;i++) (*newStates)[i]=moves[i];
+#ifdef DEBUG
 	printf("King at %d block can move %d moves\n",fromblock,totalStates);
+#endif
         return totalStates;
 }
 
@@ -342,7 +349,9 @@ int moveKnight(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
         if(seven!=NULL) (*newStates)[cc++]=seven;
         if(eight!=NULL) (*newStates)[cc++]=eight;
 	
-	printf("\n\nKnight at %d block can move %d moves\n",fromblock,totalStates);
+#ifdef DEBUG
+	CkPrintf("\n\nKnight at %d block can move %d moves\n",fromblock,totalStates);
+#endif
         return totalStates;
 }
 
@@ -555,7 +564,9 @@ int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
         for(int i=0;i<bMoves;i++) (*newStates)[i+sMoves]=bStates[i];
         for(int i=0;i<rMoves;i++) (*newStates)[i+sMoves+bMoves]=rStates[i];
         for(int i=0;i<lMoves;i++) (*newStates)[i+sMoves+bMoves+rMoves]=lStates[i];
+#ifdef DEBUG
 	printf("Rook at %d block can move %d moves\n",fromblock,totalStates);
+#endif
 
         return totalStates;
 }
@@ -773,7 +784,9 @@ int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***new
         for(int i=0;i<nwMoves;i++) (*newStates)[i+neMoves]=nwStates[i];
         for(int i=0;i<seMoves;i++) (*newStates)[i+neMoves+nwMoves]=seStates[i];
         for(int i=0;i<swMoves;i++) (*newStates)[i+neMoves+nwMoves+seMoves]=swStates[i];
+#ifdef DEBUG
         printf("Bishop at %d block can move %d moves\n",fromblock,totalStates);
+#endif
 
         return totalStates;
 }
@@ -907,7 +920,9 @@ int movePawn(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newSt
 
 //	printState(twoStep);
 //	printState(*newStates[0]);
+#ifdef DEBUG
 	printf("Pawn at %d block can move %d moves\n",fromblock,totalStates);
+#endif
 	return totalStates;
 
 }
