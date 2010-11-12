@@ -14,13 +14,18 @@ using namespace std;
 typedef set< uint16_t > SetMove;
 typedef vector< SetMove > VecSetMove;
 
-#define IsFree(a,ind)  !( (a[(ind / 32)]) & (1<<(ind % 32)) )
-#define Set(a,ind) a[(ind/32)] = ( a[(ind/32)] | (1<<(ind % 32)) )
-#define Reset(a,ind) a[(ind/32)] = ( a[(ind/32)] & (~(1<<(ind % 32))) )
+const long long ONE = 1;
+#define IsFree64(a,ind)  !( (a[((ind) / 64)]) & (ONE<<((ind) % 64)) )
+#define Set64(a,ind) a[((ind)/64)] = ( a[((ind)/64)] | (ONE<<((ind) % 64)) )
+#define Reset64(a,ind) a[((ind)/64)] = ( a[((ind)/64)] & (~(ONE<<((ind) % 64))) )
 
-#define IsFree16(a,ind)  !( (a[(ind / 16)]) & (1<<(ind % 16)) )
-#define Set16(a,ind) a[(ind/16)] = ( a[(ind/16)] | (1<<(ind % 16)) )
-#define Reset16(a,ind) a[(ind/16)] = ( a[(ind/16)] & (~(1<<(ind % 16))) )
+#define IsFree(a,ind)  !( (a[((ind) / 32)]) & (1<<((ind) % 32)) )
+#define Set(a,ind) a[((ind)/32)] = ( a[((ind)/32)] | (1<<((ind) % 32)) )
+#define Reset(a,ind) a[((ind)/32)] = ( a[((ind)/32)] & (~(1<<((ind) % 32))) )
+
+#define IsFree16(a,ind)  !( (a[((ind) / 16)]) & (1<<((ind) % 16)) )
+#define Set16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] | (1<<((ind) % 16)) )
+#define Reset16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] & (~(1<<((ind) % 16))) )
 
 const int NMOVES = 1000;
 const int NLAYERS = 60;
@@ -116,12 +121,12 @@ string sampleState(int test)
   ostringstream os;
   switch (test) {
 	case 0:
-    os <<  "RNBQKBNR"
+    os <<  "R-BQKBNR"
 	<< "PPPPPPPP"
 	<< "--------"
 	<< "--------"
 	<< "--------"
-	<< "--------"
+	<< "-N------"
 	<< "pppppppp"
 	<< "rnbqkbnr";
 	break;
@@ -131,6 +136,26 @@ string sampleState(int test)
 	<< "--------"
 	<< "--------"
 	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------";
+	break;
+	case 2:
+    os <<  "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------"
+	<< "--------";
+	break;
+	case 3:
+    os <<  "nN-N----"
+	<< "--p-----"
+	<< "-k---b--"
+	<< "-----Rq-"
+	<< "--K--B--"
 	<< "--------"
 	<< "--------"
 	<< "--------";
@@ -172,7 +197,7 @@ void applyMove(uint16_t* state, uint16_t move)
 
 void printPiece(uint16_t val)
 {
-        if(val==0) printf(" ");
+        if(val==0) printf("-");
         else if(val==1) printf("r");
         else if(val==2) printf("n");
         else if(val==3) printf("b");
@@ -1197,10 +1222,20 @@ bool empty(uint16_t* state, uint16_t block)
   return getBlockVal(state,block) == 0;
 }
 
+bool ownPiece(uint16_t val, bool white)
+{
+  return (white && (val > 0 && val < 7)) || (!white && (val >= 7 && val < 13));  
+}
+
 bool ownPiece(uint16_t* state, uint16_t block, bool white)
 {
   uint16_t val = getBlockVal(state,block);
   return (white && (val > 0 && val < 7)) || (!white && (val >= 7 && val < 13));  
+}
+
+bool opponentPiece(uint16_t val, bool white)
+{
+  return (!white && (val > 0 && val < 7)) || (white && (val >= 7 && val < 13));  
 }
 
 bool opponentPiece(uint16_t* state, uint16_t block, bool white)
@@ -1405,8 +1440,266 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
   }
 }
 
+
+long long rooks[64];
+long long bishops[64];
+long long knights[64];
+
+void north(long long* x, int row, int col)
+{
+  assert (col >= 0);
+  assert (col <= 7);
+  if (row >=0) {
+    Set64(x,row*8+col);
+    north(x,row-1,col); 
+  }
+}
+
+void south(long long* x, int row, int col)
+{
+  assert (col >= 0);
+  assert (col <= 7);
+  if (row <=7) {
+    Set64(x,row*8+col);
+    south(x,row+1,col); 
+  }
+}
+
+void east(long long* x, int row, int col)
+{
+  //cout << "row: " << row << " col: " << col << endl;
+  assert (row >= 0);
+  assert (row <= 7);
+  if (col <=7) {
+    Set64(x,row*8+col);
+    //*x = *x | (ONE << (row*8+col));
+    //cout << "*x: " << *x << endl;
+    east(x,row,col+1); 
+  }
+}
+
+void west(long long* x, int row, int col)
+{
+  assert (row >= 0);
+  assert (row <= 7);
+  if (col >=0) {
+    Set64(x,row*8+col);
+    west(x,row,col-1); 
+  }
+}
+
+void northwest(long long* x, int row, int col)
+{
+  if (row >=0 && col <= 7) {
+    Set64(x,row*8+col);
+    northwest(x,row-1,col+1); 
+  }
+}
+
+void northeast(long long* x, int row, int col)
+{
+  if (row >=0 && col >= 0) {
+    Set64(x,row*8+col);
+    northeast(x,row-1,col-1); 
+  }
+}
+
+void southwest(long long* x, int row, int col)
+{
+  if (row <=7 && col >= 0) {
+    Set64(x,row*8+col);
+    southwest(x,row+1,col-1); 
+  }
+}
+
+void southeast(long long* x, int row, int col)
+{
+  if (row <=7 && col <= 7) {
+    Set64(x,row*8+col);
+    southeast(x,row+1,col+1); 
+  }
+}
+
+void fillKnight(long long* x, int row, int col)
+{
+  if ((row >= 0 && row <= 7) &&
+      (col >= 0 && col <= 7)) {
+    Set64(x,row*8+col);
+  }
+}
+
+void populateRook(long long* x, int i)
+{
+  int row = i / 8;
+  int col = i % 8;
+  north(x,row-1,col);
+  south(x,row+1,col);
+  east(x,row,col+1);
+  west(x,row,col-1);
+}
+
+void populateBishop(long long* x, int i)
+{
+  int row = i / 8;
+  int col = i % 8;
+  northeast(x,row-1,col-1);
+  northwest(x,row-1,col+1);
+  southwest(x,row+1,col-1);
+  southeast(x,row+1,col+1);
+}
+
+void knightSpots(long long* x, int i)
+{
+  int row = i / 8;
+  int col = i % 8;
+  fillKnight(x,row-1,col-2);
+  fillKnight(x,row-2,col-1);
+  fillKnight(x,row+1,col-2);
+  fillKnight(x,row+2,col-1);
+  fillKnight(x,row+1,col+2);
+  fillKnight(x,row+2,col+1);
+  fillKnight(x,row-1,col+2);
+  fillKnight(x,row-2,col+1);
+}
+
+void fill()
+{
+  for (int i = 0; i < 64; i++) {
+    populateRook(rooks+i,i);
+    populateBishop(bishops+i,i);
+    knightSpots(knights+i,i);
+  }
+}
+
+void dispAccs(long long* base, int i)
+{
+  uint16_t state[16];
+  long long* x = base + i;
+  string s = sampleState(2);
+  cout << "State: " << s << endl;
+  for (int j = 0; j < 64; j++) {
+    if (i == j) s[j] = 'q';
+    else if (!(IsFree64(x,j))) s[j] = 'p';
+    //cout << "x: " << *x << " j: " << j << " IsFree(x,j): " << (IsFree64(x,j)) << " 1<<j: " << (ONE << j) << endl;
+  }
+  fillBoard(state,s);
+  printState(state);
+}
+
+//    case '-' : return 0;
+//    case 'r' : return 1;
+//    case 'n' : return 2;
+//    case 'b' : return 3;
+//    case 'k' : return 4;
+//    case 'q' : return 5;
+//    case 'p' : return 6;
+//    case 'R' : return 7;
+//    case 'N' : return 8;
+//    case 'B' : return 9;
+//    case 'K' : return 10;
+//    case 'Q' : return 11;
+//    case 'P' : return 12;
+
+bool rookable(uint16_t v) { return (v==1 || v== 4 || v == 5 || v == 7 || v == 10 || v == 11); }
+bool bishopable(uint16_t v) { return (v==3 || v== 4 || v == 5 || v == 9 || v == 10 || v == 11); }
+bool isKing(uint16_t v) { return (v== 4 || v== 10);}
+bool isKnight(uint16_t v) { return (v== 2 || v== 8);}
+
+void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
+{
+  printState(state);
+  static int8_t rookOffsets[] = {-8,1,8,-1};
+  static int8_t bishopOffsets[] = {-9,-7,9,7};
+  static int8_t knightOffsets[] = {-17,-15,-10,-6,6,10,15,17};
+  for (int src = 0; src < 64; src ++) {
+    uint16_t pieceVal = getBlockVal(state,src);
+    uint16_t destPiece = 0;
+    if (!pieceVal || opponentPiece(pieceVal,whiteMove)) continue;
+
+    //dispAccs(src);
+    long long* r = rooks + src;
+    //cout << "*r: " << *r << endl;
+    //for (int k = 63; k >= 0; k--) cout << (IsFree64(r,k) ? "0" : "1"); cout << "\n";
+    long long* b = bishops + src;
+    bool blocked = false;
+    int dest;
+     
+    if (isKnight(pieceVal)) {
+      for (int i = 0; i < 8; i++) {
+        uint16_t dest = src + knightOffsets[i];
+        if (dest > 63 || dest < 0) continue;
+        if (!ownPiece(state,dest,whiteMove)) {
+          if (knights[src] & (ONE << dest)) {
+            printf("ksrc: %d dest: %d\n",src,dest);
+          }
+        }
+      } 
+    }
+    if (rookable(pieceVal)) {
+      for (int dir = 0; dir < 4; dir++) { // N, E, S, W
+        blocked = false;
+        for (int off = 1; off < 8; off++) {
+          dest = src + rookOffsets[dir]*off;
+          //cout << dest << endl;
+          if (dest < 0 || dest > 63) {
+            //printf("Dest %d; break\n",dest);
+            break;
+          }
+          if (IsFree64(r,dest)) { 
+            //printf ("IsFree64: %lld dest: %d\n",*r,dest);
+            break;
+          }
+          destPiece = getBlockVal(state,dest);
+          if (ownPiece(destPiece,whiteMove)) break; 
+          printf("rsrc: %d dest: %d blocked: %d\n",src,dest,blocked);
+          if (opponentPiece(destPiece,whiteMove)) blocked = true; 
+          if (isKing(pieceVal)) break;
+        }
+      }
+    }
+    if (bishopable(pieceVal)) {
+      //dispAccs(bishops,src);
+      for (int dir = 0; dir < 4; dir++) { // NW, NE, SE, SW
+        blocked = false;
+        for (int off = 1; off < 8; off++) {
+          dest = src + bishopOffsets[dir]*off;
+          if (dest < 0 || dest > 63) break;
+          if (IsFree64(b,dest)) break;
+          destPiece = getBlockVal(state,dest);
+          if (ownPiece(destPiece,whiteMove)) break; 
+          printf("bsrc: %d dest: %d blocked: %d\n",src,dest,blocked);
+          if (opponentPiece(destPiece,whiteMove)) blocked = true; 
+          if (isKing(pieceVal)) break;
+        }
+      }
+    }
+    if (pieceVal == 6 ) { // white pawn
+      dest = src - 8;
+      if (dest > 0) {
+        destPiece = getBlockVal(state,dest);
+        blocked = opponentPiece(destPiece,whiteMove);
+        if (!ownPiece(destPiece,whiteMove)) {
+          printf("psrc: %d dest: %d blocked: %d\n",src,dest,blocked);
+        }
+      }
+      dest++;
+      if (dest > 0 && (bishops[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
+          printf("pc src: %d dest: %d \n",src,dest);
+      }
+      dest -= 2;
+      if (dest > 0 && (bishops[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
+          printf("pc src: %d dest: %d \n",src,dest);
+      }
+    }
+  }
+}
+
 int main()
 {
+  fill();
+  //for (int i = 0; i < 64; i++) dispAccs(bishops,i);
+  //considerations();
+  //return 0;
 /*******************************************************************************************
 //	Start config
 //	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
@@ -1426,11 +1719,12 @@ int main()
         VecSetMove failedMoves(NLAYERS);
 	uint16_t state[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         int nMoves = 0;
- 	string s = sampleState(1);
+ 	string s = sampleState(0);
         fillBoard(state,s);
+        generateAttemptableMoves(state,false,moveList[0],nMoves);
 	//printState(state);	
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
-        processMoveHistory(state,failedMoves,moveHistory,nExecutedMoves);
+	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
+        //processMoveHistory(state,failedMoves,moveHistory,nExecutedMoves);
 	//findAttemptableMoves(state,true,attemptableMoves,nMoves);
 	//tryAttemptableMoves(state,true,attemptableMoves,nMoves);
 	//movePiece(state,0,15);	
@@ -1453,6 +1747,5 @@ int main()
 //  uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,11,26214,26214,4660,21281};
 //	printState(state);
 	//move(state,true);
-        cout << "Made it this far" << endl;
 	return 0;
 }
