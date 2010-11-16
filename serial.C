@@ -30,6 +30,7 @@ const long long ONE = 1;
 const int NMOVES = 1000;
 const int NLAYERS = 3;
 const int STATESIZE = 16;
+uint16_t globalState[16];
 
 uint16_t getBlockVal(uint16_t*,int);
 void removePiece(uint16_t *state,uint16_t fromblock);
@@ -81,6 +82,28 @@ string decodeMove(uint16_t move)
   decodeMove (move, from, to, blocked, checked);
   ostringstream os;
   os << "(" << from << "," << to << ")";
+  return os.str();
+}
+
+int rankOf(int block)
+{
+  return 8 - block / 8;
+}
+
+string decodeMove(uint16_t* state, uint16_t move)
+{
+  static char files[9] = "abcdefgh";
+  static char pieces[14] = " RNBKQPRNBKQP";
+  uint16_t from ;
+  uint16_t to;
+  bool checked;
+  bool blocked;
+  decodeMove (move, from, to, blocked, checked);
+  ostringstream os;
+  int piece = getBlockVal(state,from);
+  assert (piece > 0);
+  assert (piece < 13);
+  os << pieces[piece] << files[from%8] << rankOf(from) << ":" << files[to%8] << rankOf(to);
   return os.str();
 }
 
@@ -177,6 +200,11 @@ string sampleState(int test)
   }
   return os.str();
 
+}
+
+void copyState(uint16_t* oldState, uint16_t* newState)
+{
+  memcpy(newState,oldState,sizeof(uint16_t)*16);
 }
 
 // Don't copy over original state
@@ -1230,6 +1258,149 @@ int move(uint16_t *state,bool moveWhite)
 
 }
 
+long long rankFileDests[64];
+long long diagonalDests[64];
+long long knightDests[64];
+
+void north(long long* x, int row, int col)
+{
+  if (row >=0) {
+    Set64(x,row*8+col);
+    north(x,row-1,col); 
+  }
+}
+
+void south(long long* x, int row, int col)
+{
+  if (row <=7) {
+    Set64(x,row*8+col);
+    south(x,row+1,col); 
+  }
+}
+
+void east(long long* x, int row, int col)
+{
+  if (col <=7) {
+    Set64(x,row*8+col);
+    east(x,row,col+1); 
+  }
+}
+
+void west(long long* x, int row, int col)
+{
+  assert (row >= 0);
+  assert (row <= 7);
+  if (col >=0) {
+    Set64(x,row*8+col);
+    west(x,row,col-1); 
+  }
+}
+
+void northwest(long long* x, int row, int col)
+{
+  if (row >=0 && col <= 7) {
+    Set64(x,row*8+col);
+    northwest(x,row-1,col+1); 
+  }
+}
+
+void northeast(long long* x, int row, int col)
+{
+  if (row >=0 && col >= 0) {
+    Set64(x,row*8+col);
+    northeast(x,row-1,col-1); 
+  }
+}
+
+void southwest(long long* x, int row, int col)
+{
+  if (row <=7 && col >= 0) {
+    Set64(x,row*8+col);
+    southwest(x,row+1,col-1); 
+  }
+}
+
+void southeast(long long* x, int row, int col)
+{
+  if (row <=7 && col <= 7) {
+    Set64(x,row*8+col);
+    southeast(x,row+1,col+1); 
+  }
+}
+
+void fillKnight(long long* x, int row, int col)
+{
+  if ((row >= 0 && row <= 7) &&
+      (col >= 0 && col <= 7)) {
+    Set64(x,row*8+col);
+  }
+}
+
+void enumerateRankFile(long long* x, int i)
+{
+  int row = i / 8;
+  int col = i % 8;
+  north(x,row-1,col);
+  south(x,row+1,col);
+  east(x,row,col+1);
+  west(x,row,col-1);
+}
+
+void enumerateDiagonals(long long* x, int i)
+{
+  int row = i / 8;
+  int col = i % 8;
+  northeast(x,row-1,col-1);
+  northwest(x,row-1,col+1);
+  southwest(x,row+1,col-1);
+  southeast(x,row+1,col+1);
+}
+
+void enumerateKnight(long long* x, int i)
+{
+  int row = i / 8;
+  int col = i % 8;
+  fillKnight(x,row-1,col-2);
+  fillKnight(x,row-2,col-1);
+  fillKnight(x,row+1,col-2);
+  fillKnight(x,row+2,col-1);
+  fillKnight(x,row+1,col+2);
+  fillKnight(x,row+2,col+1);
+  fillKnight(x,row-1,col+2);
+  fillKnight(x,row-2,col+1);
+}
+
+void enumerateSrcDestPairs()
+{
+  for (int i = 0; i < 64; i++) {
+    enumerateRankFile(rankFileDests+i,i);
+    enumerateDiagonals(diagonalDests+i,i);
+    enumerateKnight(knightDests+i,i);
+  }
+}
+
+void displayAccessibleSquares(long long* base, int i)
+{
+  uint16_t state[16];
+  long long* x = base + i;
+  string s = sampleState(2);
+  cout << "State: " << s << endl;
+  for (int j = 0; j < 64; j++) {
+    if (i == j) s[j] = 'q';
+    else if (!(IsFree64(x,j))) s[j] = 'p';
+    //cout << "x: " << *x << " j: " << j << " IsFree(x,j): " << (IsFree64(x,j)) << " 1<<j: " << (ONE << j) << endl;
+  }
+  fillBoard(state,s);
+  printState(state);
+}
+
+
+// TODO: Convert these to bit operations
+bool movesRankFile(uint16_t v) { return (v==1 || v== 4 || v == 5 || v == 7 || v == 10 || v == 11); }
+bool movesDiagonal(uint16_t v) { return (v==3 || v== 4 || v == 5 || v == 9 || v == 10 || v == 11); }
+bool isKing(uint16_t v) { return (v== 4 || v== 10);}
+bool isKnight(uint16_t v) { return (v== 2 || v== 8);}
+
 bool empty(uint16_t* state, uint16_t block)
 {
   return getBlockVal(state,block) == 0;
@@ -1415,6 +1586,21 @@ unsigned countIllegalMoves(uint16_t* moves, int nMoves)
   }
   return count;
 }
+
+bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
+{
+
+      for (int i = 0; i < nMoves; i++) {
+        if (move == moveList[i]) {
+	  return true;  
+	  // The attempted but illegal move in the actual state is also attempted and illegal in this
+	  // possible state.  This is crucial, because if our input were the actual list of observations, those observations
+	  // for this move would have to match exactly.
+        }
+      }
+      return false; // No matching move found
+}
+
 // Generate a list of all the sequences of moves that are consistent with the observations that would have been received by the player denoted by 
 // whitePerspective (T=white, F=black).  The moveHistory contains the list of all the successful moves (even indexed moves for white, odds for black)
 // and the associated set of unsuccessful moves are in failedMoves, i.e., failedMoves[i] is the set of all unsuccessful moves that were tried
@@ -1430,43 +1616,54 @@ unsigned countIllegalMoves(uint16_t* moves, int nMoves)
 void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
   uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
 {
+  // Need to check that the messages match
+  if (!samePawnTries(trueState, possState)) return; 
+  if (!sameCheckStatus(trueState, possState)) return; 
 
   if (depth == maxdepth) {
 	// found a goal state
 	//processMoveHistory(failedMoves,moveHistory);
+	uint16_t destructibleState[16];
+        copyState(globalState,destructibleState);
         for (int i = 0; i < depth; i++) {
-	  cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+	  if (i%2 == 0) cout << (i/2+1) << ". ";
+	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
+	  applyMove(destructibleState,possHistory[i]);
+	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
         }
-        cout << endl;
+        cout << " MATCH" << endl;
 	return;
   }
-  uint16_t newPossState[16]; 
+  // Note: since the same application is being done for every call at this depth; we could just compute the
+  // new global state at this depth once before the initial call and then just move a pointer around
   uint16_t newTrueState[16]; 
   applyMove(trueState,newTrueState,moveHistory[depth]);
 
+  uint16_t newPossState[16]; 
+  // Note that the moves at the legality of all the moves at layers[depth] will be set according the possible state, not actual
   int nMoves = 0;
   generateAttemptableMoves(possState, whiteMove, layers[depth], nMoves);
   assert (nMoves < NMOVES); // 
-
-  if (!samePawnTries(trueState, possState)) return; 
-  if (!sameCheckStatus(trueState, possState)) return; 
 
   if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
     SetMove& failures = failedMoves[depth];
     for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
       uint16_t move = *itr ;
-      if (!isAttemptable(possState,move, whiteMove)) { // One of the failed moves is not even attemptable in this state
-	cout << "One of the failed moves is not even attemptable in this state: " << decodeMove(*itr) << endl;
-	return;
-      } else if (isLegalOnBoard(possState, move, whiteMove)) { // One of the failed moves would have succeeded in this state
-        cout << "One of the failed moves would have succeeded in this state: " << decodeMove(*itr) << endl;
-	return;
-      }
+      if (!foundMatchingMove(move,layers[depth],nMoves)) return; 
+      // This means that one of the illegal moves that this player made in the actual game is not 
+      // legal/attemptable from this position.  So this position cannot be possible.
+      //if (!isAttemptable(possState,move, whiteMove)) { // One of the failed moves is not even attemptable in this state
+      //  cout << "One of the failed moves is not even attemptable in this state: " << decodeMove(*itr) << endl;
+      //  return;
+      //} else if (isLegalOnBoard(possState, move, whiteMove)) { // One of the failed moves would have succeeded in this state
+      //  cout << "One of the failed moves would have succeeded in this state: " << decodeMove(*itr) << endl;
+      //  return;
+      //}
     }
     // If we get to this point, all of the failed moves are consistent
     // We know exactly what the actual move was; make it
     uint16_t& actualMove = moveHistory[depth];
-    if (!isLegalOnBoard(possState,whiteMove,actualMove)) return;
+    if (!foundMatchingMove(actualMove,layers[depth],nMoves)) return; // The legal move that was actually made is not legal here
     applyMove(possState,newPossState,actualMove);
     possHistory[depth] = actualMove;
     generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
@@ -1480,7 +1677,7 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
     }
     for (int i = 0; i < nMoves; i++) {
       uint16_t& move = layers[depth][i];
-      if (isLegalOnBoard(possState,whiteMove,move)) { // Obviously, we can only execute the moves that are actually legal from this state
+      if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
         applyMove(possState,newPossState,move);
         possHistory[depth] = move;
         generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
@@ -1490,149 +1687,6 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
   }
 }
 
-
-long long rankFileDests[64];
-long long diagonalDests[64];
-long long knightDests[64];
-
-void north(long long* x, int row, int col)
-{
-  if (row >=0) {
-    Set64(x,row*8+col);
-    north(x,row-1,col); 
-  }
-}
-
-void south(long long* x, int row, int col)
-{
-  if (row <=7) {
-    Set64(x,row*8+col);
-    south(x,row+1,col); 
-  }
-}
-
-void east(long long* x, int row, int col)
-{
-  if (col <=7) {
-    Set64(x,row*8+col);
-    east(x,row,col+1); 
-  }
-}
-
-void west(long long* x, int row, int col)
-{
-  assert (row >= 0);
-  assert (row <= 7);
-  if (col >=0) {
-    Set64(x,row*8+col);
-    west(x,row,col-1); 
-  }
-}
-
-void northwest(long long* x, int row, int col)
-{
-  if (row >=0 && col <= 7) {
-    Set64(x,row*8+col);
-    northwest(x,row-1,col+1); 
-  }
-}
-
-void northeast(long long* x, int row, int col)
-{
-  if (row >=0 && col >= 0) {
-    Set64(x,row*8+col);
-    northeast(x,row-1,col-1); 
-  }
-}
-
-void southwest(long long* x, int row, int col)
-{
-  if (row <=7 && col >= 0) {
-    Set64(x,row*8+col);
-    southwest(x,row+1,col-1); 
-  }
-}
-
-void southeast(long long* x, int row, int col)
-{
-  if (row <=7 && col <= 7) {
-    Set64(x,row*8+col);
-    southeast(x,row+1,col+1); 
-  }
-}
-
-void fillKnight(long long* x, int row, int col)
-{
-  if ((row >= 0 && row <= 7) &&
-      (col >= 0 && col <= 7)) {
-    Set64(x,row*8+col);
-  }
-}
-
-void enumerateRankFile(long long* x, int i)
-{
-  int row = i / 8;
-  int col = i % 8;
-  north(x,row-1,col);
-  south(x,row+1,col);
-  east(x,row,col+1);
-  west(x,row,col-1);
-}
-
-void enumerateDiagonals(long long* x, int i)
-{
-  int row = i / 8;
-  int col = i % 8;
-  northeast(x,row-1,col-1);
-  northwest(x,row-1,col+1);
-  southwest(x,row+1,col-1);
-  southeast(x,row+1,col+1);
-}
-
-void enumerateKnight(long long* x, int i)
-{
-  int row = i / 8;
-  int col = i % 8;
-  fillKnight(x,row-1,col-2);
-  fillKnight(x,row-2,col-1);
-  fillKnight(x,row+1,col-2);
-  fillKnight(x,row+2,col-1);
-  fillKnight(x,row+1,col+2);
-  fillKnight(x,row+2,col+1);
-  fillKnight(x,row-1,col+2);
-  fillKnight(x,row-2,col+1);
-}
-
-void enumerateSrcDestPairs()
-{
-  for (int i = 0; i < 64; i++) {
-    enumerateRankFile(rankFileDests+i,i);
-    enumerateDiagonals(diagonalDests+i,i);
-    enumerateKnight(knightDests+i,i);
-  }
-}
-
-void displayAccessibleSquares(long long* base, int i)
-{
-  uint16_t state[16];
-  long long* x = base + i;
-  string s = sampleState(2);
-  cout << "State: " << s << endl;
-  for (int j = 0; j < 64; j++) {
-    if (i == j) s[j] = 'q';
-    else if (!(IsFree64(x,j))) s[j] = 'p';
-    //cout << "x: " << *x << " j: " << j << " IsFree(x,j): " << (IsFree64(x,j)) << " 1<<j: " << (ONE << j) << endl;
-  }
-  fillBoard(state,s);
-  printState(state);
-}
-
-
-// TODO: Convert these to bit operations
-bool movesRankFile(uint16_t v) { return (v==1 || v== 4 || v == 5 || v == 7 || v == 10 || v == 11); }
-bool movesDiagonal(uint16_t v) { return (v==3 || v== 4 || v == 5 || v == 9 || v == 10 || v == 11); }
-bool isKing(uint16_t v) { return (v== 4 || v== 10);}
-bool isKnight(uint16_t v) { return (v== 2 || v== 8);}
 
 void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
 {
@@ -1770,9 +1824,10 @@ int main()
 	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
 	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
         cout << nExecutedMoves << endl;
-	uint16_t statecopy[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        fillBoard(statecopy,s); 
-        processMoveHistory(statecopy,failedMoves,moveHistory,nExecutedMoves);
+	uint16_t stateCopy[16];
+        copyState(state,stateCopy);
+        copyState(state,globalState);
+        processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
 	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
         generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 //void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
