@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 #include <cassert>
 #include <string>
 #include <iostream>
@@ -28,8 +29,10 @@ const long long ONE = 1;
 #define Reset16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] & (~(1<<((ind) % 16))) )
 
 const int NMOVES = 1000;
-const int NLAYERS = 3;
+const int NLAYERS = 30;
 const int STATESIZE = 16;
+const int BLOCKED = ONE << 15;
+const int CHECKED= ONE << 14;
 uint16_t globalState[16];
 
 uint16_t getBlockVal(uint16_t*,int);
@@ -39,6 +42,7 @@ void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock);
 int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
 int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
 void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves);
+bool isLegal(const uint16_t& move);
 
 // MDR
 string disp(int* x, int max)
@@ -63,6 +67,11 @@ uint16_t encodeMove(uint16_t from, uint16_t to, bool blocked, bool checked)
 {
   uint16_t result = 0;
   result = (blocked << 15) | (checked << 14) | (from << 6) | to ;
+}
+
+uint16_t extractDestination(const uint16_t move)
+{
+  return move & 63; //0x003F
 }
 
 void decodeMove(uint16_t move, uint16_t& from, uint16_t& to, bool& blocked, bool& checked)
@@ -1428,55 +1437,98 @@ bool opponentPiece(uint16_t* state, uint16_t block, bool white)
   return (!white && (val > 0 && val < 7)) || (white && (val >= 7 && val < 13));  
 }
 
-
-void findAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
+int kingLocation(uint16_t* state, bool whiteKing)
 {
-  nMoves = 0;
-  for (int i = 0; i < 16; i++) {
-    for (int j = 0; j < 16; j++) {
-      if (i == j ) continue;
-      if (ownPiece(state,i,whiteMove) && !ownPiece(state,j,whiteMove)) {
-        moves[nMoves++] = encodeMove(i,j,false,false);
-      }
-    }
+  for (int i = 0; i < 64; i++) {
+    if (getBlockVal(state,i) == (whiteKing ? 4 : 10)) return i; 
   }
+  assert (false); // The king queried is not on the board at all!
 }
 
-void tryAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
+int unblockedAssaultOn(uint16_t* state, int block, uint16_t* moves, int nMoves)
 {
-    uint16_t newState[16];
   for (int i = 0; i < nMoves; i++) {
-    dispMove(moves[i]);
-    applyMove(state,newState,moves[i]);
-    printState(newState);
+    uint16_t& move = moves[i];
+    if (!(move & BLOCKED) && extractDestination(move) == block) {
+        //cout << "CHECKED POSITION" << endl;
+        //printState(state);
+	//assert(false);
+	return true;
+    }
   }
+  return false;
 }
 
-void generateMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, uint16_t** layers, int depth, int maxdepth)
+bool leavesKingInCheck(uint16_t* state, uint16_t move, bool whiteMove) 
 {
-  if (depth == maxdepth) {
-	//printState(state);
-    cout << "Begin Plausible move sequence: " << depth << endl;
-    for (int i = 0; i < depth; i++) {
-      cout << "Move #" << i;
-      dispMove(moveHistory[i]);
-    }
-    cout << "End Plausible move sequence: " << depth << endl;
-    return;
-  }
+  static uint16_t moves[NMOVES];
+  static uint16_t currentState[16];
   int nMoves = 0;
-  uint16_t newState[16];
-  findAttemptableMoves(state, whiteMove, layers[depth], nMoves);
-  assert (nMoves < NMOVES); // 
-  for (int i = 0; i < nMoves; i++) {
-    for (int j = 0; j < 3*depth; j++) cout << " ";
-    dispMove(layers[depth][i]);
-    applyMove(state,newState,layers[depth][i]);
-    //printState(newState);
-    moveHistory[depth] = layers[depth][i];
-    generateMoves(newState,!whiteMove,moveHistory,layers,depth+1,maxdepth);
-  } 
+  applyMove(state,currentState,move);
+  generateAttemptableMoves(currentState, !whiteMove, moves, nMoves);
+  int kingLoc = kingLocation(currentState,whiteMove);
+  return unblockedAssaultOn(currentState, kingLoc, moves, nMoves);
 }
+
+// Adds the CHECK flag to every move that would leave the current player's king in check
+void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
+{
+  for (int i = 0; i < nMoves; i++) {
+    uint16_t& move = moves[i];
+    if (isLegal(move) && leavesKingInCheck(state,move,whiteMove)) {
+      move |= CHECKED; 
+    }
+  }
+}
+
+//void findAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
+//{
+//  nMoves = 0;
+//  for (int i = 0; i < 16; i++) {
+//    for (int j = 0; j < 16; j++) {
+//      if (i == j ) continue;
+//      if (ownPiece(state,i,whiteMove) && !ownPiece(state,j,whiteMove)) {
+//        moves[nMoves++] = encodeMove(i,j,false,false);
+//      }
+//    }
+//  }
+//}
+//
+//void tryAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
+//{
+//    uint16_t newState[16];
+//  for (int i = 0; i < nMoves; i++) {
+//    dispMove(moves[i]);
+//    applyMove(state,newState,moves[i]);
+//    printState(newState);
+//  }
+//}
+
+//void generateMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, uint16_t** layers, int depth, int maxdepth)
+//{
+//  if (depth == maxdepth) {
+//	//printState(state);
+//    cout << "Begin Plausible move sequence: " << depth << endl;
+//    for (int i = 0; i < depth; i++) {
+//      cout << "Move #" << i;
+//      dispMove(moveHistory[i]);
+//    }
+//    cout << "End Plausible move sequence: " << depth << endl;
+//    return;
+//  }
+//  int nMoves = 0;
+//  uint16_t newState[16];
+//  findAttemptableMoves(state, whiteMove, layers[depth], nMoves);
+//  assert (nMoves < NMOVES); // 
+//  for (int i = 0; i < nMoves; i++) {
+//    for (int j = 0; j < 3*depth; j++) cout << " ";
+//    dispMove(layers[depth][i]);
+//    applyMove(state,newState,layers[depth][i]);
+//    //printState(newState);
+//    moveHistory[depth] = layers[depth][i];
+//    generateMoves(newState,!whiteMove,moveHistory,layers,depth+1,maxdepth);
+//  } 
+//}
 
 bool isPawnTry(const uint16_t& move)
 {
@@ -1551,6 +1603,7 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
   int nMoves = 0;
   uint16_t newState[16]; 
   generateAttemptableMoves(state, whiteMove, layers[depth], nMoves);
+  checkForCheck(state, whiteMove, layers[depth], nMoves);
   assert (nMoves < NMOVES); // 
   if (!hasLegalMove(layers[depth],nMoves)) return depth; // No legal mvoes from this state
   while (true) { // Keep trying random moves until a legal one is executed
@@ -1618,7 +1671,7 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 {
   // Need to check that the messages match
   if (!samePawnTries(trueState, possState)) return; 
-  if (!sameCheckStatus(trueState, possState)) return; 
+  //if (!sameCheckStatus(trueState, possState)) return; 
 
   if (depth == maxdepth) {
 	// found a goal state
@@ -1643,6 +1696,7 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
   // Note that the moves at the legality of all the moves at layers[depth] will be set according the possible state, not actual
   int nMoves = 0;
   generateAttemptableMoves(possState, whiteMove, layers[depth], nMoves);
+  checkForCheck(possState, whiteMove, layers[depth], nMoves);
   assert (nMoves < NMOVES); // 
 
   if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
@@ -1678,6 +1732,7 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
     for (int i = 0; i < nMoves; i++) {
       uint16_t& move = layers[depth][i];
       if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
+	//if ((moveHistory[depth] & CHECKED
         applyMove(possState,newPossState,move);
         possHistory[depth] = move;
         generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
@@ -1796,6 +1851,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 int main()
 {
   enumerateSrcDestPairs();
+  srand(time(0));
   //for (int i = 0; i < 64; i++) displayAccessibleSquares(diagonalDests,i);
 /*******************************************************************************************
 //	Start config
@@ -1821,10 +1877,11 @@ int main()
         fillBoard(state,s);
         //generateAttemptableMoves(state,true,moveList[0],nMoves);
 	//printState(state);	
-	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
-	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,16);
+	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
         cout << nExecutedMoves << endl;
 	uint16_t stateCopy[16];
+	//return 0;
         copyState(state,stateCopy);
         copyState(state,globalState);
         processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
