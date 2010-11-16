@@ -1323,14 +1323,16 @@ bool isLegal(const uint16_t& move)
 // This version ignores the blocked and checked bits from move and actually checks to make sure that the from/to
 // combination is a legitimate move from state
 // TODO
-bool isLegal(uint16_t* state, bool whiteMove, const uint16_t& move)
+bool isLegalOnBoard(uint16_t* state, bool whiteMove, const uint16_t& move)
 {
+  assert(false);
   return true;
 }
 
 // TODO
 bool isAttemptable(uint16_t* state, bool whiteMove, const uint16_t& move)
 {
+  assert(false);
   return true;
 }
 
@@ -1355,6 +1357,17 @@ void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* move
     applyMove(state, move);
     printState(state);
   }
+}
+
+int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves)
+{
+  moveHistory[0] = encodeMove(52,36,false,false);
+  moveHistory[1] = encodeMove(12,28,false,false);
+  failedMoves[2].insert( encodeMove(36,28,true,false) );
+  moveHistory[2] = encodeMove(55,47,false,false);
+  //moveHistory[3] = encodeMove(8,9,false,false);
+  //failedMoves[3].insert
+  return 3;
 }
 
 int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
@@ -1394,6 +1407,14 @@ bool sameCheckStatus(uint16_t* state1, uint16_t* state2)
   return true;
 }
 
+unsigned countIllegalMoves(uint16_t* moves, int nMoves)
+{
+  unsigned count = 0;
+  for (int i = 0; i < nMoves; i++) {
+    if (!isLegal(moves[i])) count++;
+  }
+  return count;
+}
 // Generate a list of all the sequences of moves that are consistent with the observations that would have been received by the player denoted by 
 // whitePerspective (T=white, F=black).  The moveHistory contains the list of all the successful moves (even indexed moves for white, odds for black)
 // and the associated set of unsuccessful moves are in failedMoves, i.e., failedMoves[i] is the set of all unsuccessful moves that were tried
@@ -1435,26 +1456,32 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
     for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
       uint16_t move = *itr ;
       if (!isAttemptable(possState,move, whiteMove)) { // One of the failed moves is not even attemptable in this state
+	cout << "One of the failed moves is not even attemptable in this state: " << decodeMove(*itr) << endl;
 	return;
-      } else if (isLegal(possState, move, whiteMove)) { // One of the failed moves would have succeeded in this state
+      } else if (isLegalOnBoard(possState, move, whiteMove)) { // One of the failed moves would have succeeded in this state
+        cout << "One of the failed moves would have succeeded in this state: " << decodeMove(*itr) << endl;
 	return;
       }
     }
     // If we get to this point, all of the failed moves are consistent
     // We know exactly what the actual move was; make it
     uint16_t& actualMove = moveHistory[depth];
-    if (!isLegal(possState,whiteMove,actualMove)) return;
-    applyMove(possState,newPossState,moveHistory[depth]);
+    if (!isLegalOnBoard(possState,whiteMove,actualMove)) return;
+    applyMove(possState,newPossState,actualMove);
     possHistory[depth] = actualMove;
     generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
       moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
   } else { // We are considering the possibilities for the opponent's moves
     // Ensure that there are enough attemptable moves in the state to match the observed number of failed attempts
-    if ((unsigned)nMoves <= failedMoves[depth].size()) return; 
+    unsigned nIllegalMoves = countIllegalMoves(layers[depth], nMoves);
+    if (nIllegalMoves < failedMoves[depth].size()) {
+	cout << "nIllegalMoves: " << nIllegalMoves << " failedMoves: " << failedMoves[depth].size() << endl;
+	return; 
+    }
     for (int i = 0; i < nMoves; i++) {
       uint16_t& move = layers[depth][i];
-      if (isLegal(possState,whiteMove,move)) { // Obviously, we can only execute the moves that are actually legal from this state
-        applyMove(possState,newPossState,moveHistory[depth]);
+      if (isLegalOnBoard(possState,whiteMove,move)) { // Obviously, we can only execute the moves that are actually legal from this state
+        applyMove(possState,newPossState,move);
         possHistory[depth] = move;
         generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
           moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
@@ -1686,6 +1713,16 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
         if (!ownPiece(destPiece,whiteMove)) {
           printf("pawnmove src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
+          // check for possibility of jumping 2
+          if ((pieceVal == 6 && (src / 8 ) == 6) || ((src / 8) == 1 && pieceVal == 12)) {
+            int dest2 = (pieceVal == 6) ? dest - 8 : dest + 8; // dest space if pawn moves two
+	    int dest2Piece = getBlockVal(state,dest2);
+	    bool blocked2 = opponentPiece(dest2Piece,whiteMove);
+	    if (!ownPiece(dest2Piece,whiteMove)) {
+              printf("pawn-up2 src: %d dest: %d blocked: %d\n",src,dest,blocked || blocked2);
+              moves[nMoves++] = encodeMove(src,dest2,blocked || blocked2,false);
+            }
+          }
         }
       }
       dest++;
@@ -1730,13 +1767,14 @@ int main()
         fillBoard(state,s);
         //generateAttemptableMoves(state,true,moveList[0],nMoves);
 	//printState(state);	
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
+	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,NLAYERS);
+	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
         cout << nExecutedMoves << endl;
 	uint16_t statecopy[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         fillBoard(statecopy,s); 
         processMoveHistory(statecopy,failedMoves,moveHistory,nExecutedMoves);
 	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
-        generateInformationSet(true, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+        generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 //void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
  // uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
 	//findAttemptableMoves(state,true,attemptableMoves,nMoves);
