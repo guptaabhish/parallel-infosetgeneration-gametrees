@@ -29,7 +29,7 @@ const long long ONE = 1;
 #define Reset16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] & (~(1<<((ind) % 16))) )
 
 const int NMOVES = 1000;
-const int NLAYERS = 30;
+const int NLAYERS = 100;
 const int STATESIZE = 16;
 const int BLOCKED = ONE << 15;
 const int CHECKED= ONE << 14;
@@ -41,7 +41,7 @@ void addPiece(uint16_t *state,uint16_t toblock,uint16_t pieceVal);
 void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock);
 int moveRook(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
 int moveBishop(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newStates,bool);
-void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves);
+void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves, bool verboseo = false);
 bool isLegal(const uint16_t& move);
 
 // MDR
@@ -204,6 +204,16 @@ string sampleState(int test)
 	<< "--------"
 	<< "--------"
 	<< "--------";
+	break;
+	case 4:
+    os <<  "R-BQ-BN-"
+	<< "PP-KPPP-"
+	<< "N--P---R"
+	<< "--P----P"
+	<< "p----pp-"
+	<< "--p-----"
+	<< "rpq-p--p"
+	<< "-nb-kbnr";
 	break;
     default: assert(false);
   }
@@ -1188,13 +1198,21 @@ void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock)
         uint16_t pieceVal = getBlockVal(state,fromblock);
 	//printf("pieceval: %d \n",pieceVal);
 	removePiece(state,fromblock);
-	uint16_t pieceMask=pieceVal;
+	uint16_t pieceMask = pieceVal;
+        if (pieceVal == 6 && toblock / 8 == 0) {
+          pieceMask = 5; // white pawn promotion
+	  cout << "QUEEN" << endl;
+        }
+        else if (pieceVal == 12 && toblock / 8 == 7) {
+          pieceMask = 11; // black pawn promotion
+	  cout << "QUEEN" << endl;
+	}
 	pieceMask=pieceMask<<((3-toOffset)*4);
         switch (toOffset) {
-		case 0: destMask=4095; break;
-		case 1: destMask=61695; break;
-		case 2: destMask=65296; break;
-		case 3: destMask=65520; break;
+		case 0: destMask=0x0FFF; break;
+		case 1: destMask=0xF0FF; break;
+		case 2: destMask=0xFF0F; break;
+		case 3: destMask=0xFFF0; break;
 		default: assert(false);
 	}
 	//printf("destMask: %d pieceMask%d\n",destMask,pieceMask);
@@ -1459,16 +1477,26 @@ int unblockedAssaultOn(uint16_t* state, int block, uint16_t* moves, int nMoves)
   return false;
 }
 
+bool kingInCheck(uint16_t* state, bool whiteKing)
+{
+  //cout << "KING IN CHECK" << endl;
+  //printState(state);
+  static uint16_t moves[NMOVES];
+  int nMoves = 0;
+  generateAttemptableMoves(state, !whiteKing, moves, nMoves);
+  int kingLoc = kingLocation(state ,whiteKing);
+  return unblockedAssaultOn(state , kingLoc, moves, nMoves);
+
+}
+
 bool leavesKingInCheck(uint16_t* state, uint16_t move, bool whiteMove) 
 {
-  static uint16_t moves[NMOVES];
   static uint16_t currentState[16];
-  int nMoves = 0;
   applyMove(state,currentState,move);
-  generateAttemptableMoves(currentState, !whiteMove, moves, nMoves);
-  int kingLoc = kingLocation(currentState,whiteMove);
-  return unblockedAssaultOn(currentState, kingLoc, moves, nMoves);
+  //printState(currentState);
+  return kingInCheck(currentState, whiteMove);
 }
+
 
 // Adds the CHECK flag to every move that would leave the current player's king in check
 void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
@@ -1610,7 +1638,9 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     int attemptedMoveIndex = rand() % nMoves;
     uint16_t& move = layers[depth][attemptedMoveIndex];
     if (isLegal(move)) {
+      cout << "Selected move: " << decodeMove(state,move) << endl;
       applyMove(state,newState,move);
+      printState(newState);
       moveHistory[depth] = move;
       return generateRandomMoves(newState,!whiteMove,moveHistory,failedMoves,layers,depth+1,maxdepth);
     } else {
@@ -1620,15 +1650,14 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
 }
 
 // TODO
-bool samePawnTries(uint16_t* state1, uint16_t* state2)
+bool samePawnTries(uint16_t* state1, uint16_t* state2, bool whiteMove)
 {
   return true;
 }
 
-// TODO
-bool sameCheckStatus(uint16_t* state1, uint16_t* state2)
+bool sameCheckStatus(uint16_t* state1, uint16_t* state2, bool whiteMove)
 {
-  return true;
+  return kingInCheck(state1, whiteMove) == kingInCheck(state2, whiteMove);
 }
 
 unsigned countIllegalMoves(uint16_t* moves, int nMoves)
@@ -1670,8 +1699,8 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
   uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
 {
   // Need to check that the messages match
-  if (!samePawnTries(trueState, possState)) return; 
-  //if (!sameCheckStatus(trueState, possState)) return; 
+  if (!samePawnTries(trueState, possState, whiteMove)) return; 
+  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
   if (depth == maxdepth) {
 	// found a goal state
@@ -1743,9 +1772,9 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 }
 
 
-void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
+void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves, bool verbose )
 {
-  printState(state);
+  //printState(state);
   static int8_t rookOffsets[] = {-8,1,8,-1};
   static int8_t bishopOffsets[] = {-9,-7,9,7};
   static int8_t knightOffsets[] = {-17,-15,-10,-6,6,10,15,17};
@@ -1765,7 +1794,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
         if (dest > 63 || dest < 0) continue;
         if (!ownPiece(state,dest,whiteMove)) {
           if (knightDests[src] & (ONE << dest)) {
-            printf("knight   src: %d dest: %d\n",src,dest);
+            if (verbose) printf("knight   src: %d dest: %d\n",src,dest);
             moves[nMoves++] = encodeMove(src,dest,false,false);
           }
         }
@@ -1788,7 +1817,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           }
           destPiece = getBlockVal(state,dest);
           if (ownPiece(destPiece,whiteMove)) break; 
-          printf("rooklike src: %d dest: %d blocked: %d\n",src,dest,blocked);
+          if (verbose) printf("rooklike src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
           if (isKing(pieceVal)) break;
@@ -1806,7 +1835,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           if (IsFree64(b,dest)) break;
           destPiece = getBlockVal(state,dest);
           if (ownPiece(destPiece,whiteMove)) break; 
-          printf("diagonal src: %d dest: %d blocked: %d\n",src,dest,blocked);
+          if (verbose) printf("diagonal src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
           if (isKing(pieceVal)) break;
@@ -1820,7 +1849,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
         destPiece = getBlockVal(state,dest);
         blocked = opponentPiece(destPiece,whiteMove);
         if (!ownPiece(destPiece,whiteMove)) {
-          printf("pawnmove src: %d dest: %d blocked: %d\n",src,dest,blocked);
+          if (verbose) printf("pawnmove src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
           // check for possibility of jumping 2
           if ((pieceVal == 6 && (src / 8 ) == 6) || ((src / 8) == 1 && pieceVal == 12)) {
@@ -1828,7 +1857,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 	    int dest2Piece = getBlockVal(state,dest2);
 	    bool blocked2 = opponentPiece(dest2Piece,whiteMove);
 	    if (!ownPiece(dest2Piece,whiteMove)) {
-              printf("pawn-up2 src: %d dest: %d blocked: %d\n",src,dest,blocked || blocked2);
+              if (verbose) printf("pawn-up2 src: %d dest: %d blocked: %d\n",src,dest2,blocked || blocked2);
               moves[nMoves++] = encodeMove(src,dest2,blocked || blocked2,false);
             }
           }
@@ -1836,21 +1865,24 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
       }
       dest++;
       if (dest > 0 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
-          printf("pawncapt src: %d dest: %d \n",src,dest);
+          if (verbose) printf("pawncapt src: %d dest: %d \n",src,dest);
           moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY
       }
       dest -= 2;
       if (dest > 0 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
-          printf("pawncapt src: %d dest: %d \n",src,dest);
+          if (verbose) printf("pawncapt src: %d dest: %d \n",src,dest);
           moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13);
       }
     }
   }
 }
 
-int main()
+int main(int argc, char* argv[])
 {
   enumerateSrcDestPairs();
+  //assert (argc == 2);
+  //srand(atoi(argv[1]));
+  //srand(63214234);
   srand(time(0));
   //for (int i = 0; i < 64; i++) displayAccessibleSquares(diagonalDests,i);
 /*******************************************************************************************
@@ -1872,16 +1904,20 @@ int main()
 	int nMovesByLayer[NLAYERS];
         VecSetMove failedMoves(NLAYERS);
 	uint16_t state[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	uint16_t stateCopy[16];
         int nMoves = 0;
  	string s = sampleState(0);
         fillBoard(state,s);
+        //printState(state);
+        //applyMove(state,stateCopy,202);
+        //printState(stateCopy);
+        //return 0;
         //generateAttemptableMoves(state,true,moveList[0],nMoves);
 	//printState(state);	
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,16);
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,100);
 	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
         cout << nExecutedMoves << endl;
-	uint16_t stateCopy[16];
-	//return 0;
+	return 0;
         copyState(state,stateCopy);
         copyState(state,globalState);
         processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
