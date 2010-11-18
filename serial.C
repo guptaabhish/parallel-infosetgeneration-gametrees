@@ -12,29 +12,48 @@
 #include <string.h> // memcpy
 using namespace std;
 
+// Use sets of moves to keep track of the list of all illegal moves that were tried before
+// a legal move was made.  Sets make sense here because it doesn't matter what order the moves
+// were tried in.
 typedef set< uint16_t > SetMove;
 typedef vector< SetMove > VecSetMove;
 
 const long long ONE = 1;
 #define IsFree64(a,ind)  !( (a[((ind) / 64)]) & (ONE<<((ind) % 64)) )
 #define Set64(a,ind) a[((ind)/64)] = ( a[((ind)/64)] | (ONE<<((ind) % 64)) )
-#define Reset64(a,ind) a[((ind)/64)] = ( a[((ind)/64)] & (~(ONE<<((ind) % 64))) )
-
 #define IsFree(a,ind)  !( (a[((ind) / 32)]) & (1<<((ind) % 32)) )
 #define Set(a,ind) a[((ind)/32)] = ( a[((ind)/32)] | (1<<((ind) % 32)) )
 #define Reset(a,ind) a[((ind)/32)] = ( a[((ind)/32)] & (~(1<<((ind) % 32))) )
-
 #define IsFree16(a,ind)  !( (a[((ind) / 16)]) & (1<<((ind) % 16)) )
-#define Set16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] | (1<<((ind) % 16)) )
-#define Reset16(a,ind) a[((ind)/16)] = ( a[((ind)/16)] & (~(1<<((ind) % 16))) )
 
-const int NMOVES = 1000;
-const int NLAYERS = 100;
+// Number of slots allocated to generate all legal moves from a given position
+// I have no idea whether this is an appropriate number or not.
+const int NMOVES = 1000; 
+
+// Maximum number of legal moves in a sequence of moves from the start state.
+// This can be changed and will affect the amount of memory allocated up front and the spatial locality
+// of the program
+const int MAXDEPTH = 100;
+
+// Number of uint16_t data in a state.  This cannot be changed without redoing everything.
 const int STATESIZE = 16;
+
+// Specify the locations of th bit flags in the structures that encode a move
+// A move is a 16-bit entity.  Bits 0-5 are the destination of the move (square 0-63); bits 6-11 are the src
+// Bit 12 is reserved to flag a capture (not implemented yet)
+// Bit 13 is set for pawn captures
+// Bit 14 is set if the move puts or leaves the active player in check 
+// Bit 15 is set if the move is attemptable but blocked
 const int BLOCKED = ONE << 15;
-const int CHECKED= ONE << 14;
+const int CHECKED = ONE << 14;
+const int PAWNTRY = ONE << 13;
+
+// Currently, the start state is copied here and it is referenced during infoset generation to translate the
+// sequence of moves into a sequence of states (by copying this state to another location and then repeatedly
+// applying moves to it)
 uint16_t globalState[16];
 
+// Foreward declarations.  Some of these could be eliminated by reordering the functions definitions.
 uint16_t getBlockVal(uint16_t*,int);
 void removePiece(uint16_t *state,uint16_t fromblock);
 void addPiece(uint16_t *state,uint16_t toblock,uint16_t pieceVal);
@@ -45,6 +64,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 bool isLegal(const uint16_t& move);
 
 // MDR
+// Return the bits pointed to by x as a string of 1s and 0s, with the 0th bit on the right
 string disp(int* x, int max)
 {
   ostringstream os;
@@ -54,6 +74,7 @@ string disp(int* x, int max)
   return os.str();
 }
 
+// Same as above method, but with a uint16_t pointer.  This is entirely superfluous.  I'm not sure why it's here.
 string disp16(uint16_t* x, int max)
 {
   ostringstream os;
@@ -63,17 +84,23 @@ string disp16(uint16_t* x, int max)
   return os.str();
 }
 
-uint16_t encodeMove(uint16_t from, uint16_t to, bool blocked, bool checked)
+// Use the src and destination squares together with the appropriate flags to encode an attemptable move
+// Bits 0-5 are destination square, 6-11 are souurce square, 13 denotes pawn capture, 14 means this move
+// would leave the player who made it in check, 15 means the move is attemptable but blocked
+uint16_t encodeMove(uint16_t from, uint16_t to, bool blocked, bool checked, bool pawntry = false)
 {
   uint16_t result = 0;
-  result = (blocked << 15) | (checked << 14) | (from << 6) | to ;
+  result = (blocked << 15) | (checked << 14) | (pawntry << 13) | (from << 6) | to ;
+  return result;
 }
 
+// Return the destination square of an encoded Move
 uint16_t extractDestination(const uint16_t move)
 {
   return move & 63; //0x003F
 }
 
+// Extract the bit fields from a move into isolated structures.  Can be updated to include pawntry flag
 void decodeMove(uint16_t move, uint16_t& from, uint16_t& to, bool& blocked, bool& checked)
 {
   blocked = (1 << 15) & move; 
@@ -82,6 +109,8 @@ void decodeMove(uint16_t move, uint16_t& from, uint16_t& to, bool& blocked, bool
   to = 63 & move; 
 }
 
+// Return a string representing the move as a src/dest pair, i.e., (13,21) for a move in which a piece
+// moves from square 13 to square 21 (0 is in the upper-left corner, home of a black rook).
 string decodeMove(uint16_t move)
 {
   uint16_t from ;
@@ -94,11 +123,14 @@ string decodeMove(uint16_t move)
   return os.str();
 }
 
+// Return the rank (1-8) of the specified block
 int rankOf(int block)
 {
   return 8 - block / 8;
 }
 
+// Give a string encoding of a move.  The state is also passed in so that the type of piece can be encoded.
+// The encoding is piece-letter source-file source-rank : dest-file dest-rank
 string decodeMove(uint16_t* state, uint16_t move)
 {
   static char files[9] = "abcdefgh";
@@ -116,6 +148,7 @@ string decodeMove(uint16_t* state, uint16_t move)
   return os.str();
 }
 
+// Simple move display -- Not important
 void dispMove(uint16_t from, uint16_t to, bool blocked, bool checked)
 {
   cout << "from: " << from << " to: " << to << " blocked: " << blocked << " checked: " << checked << endl;
@@ -153,6 +186,7 @@ uint16_t getCode(char piece)
   }
 }
 
+// Initialize a state structure for a string of 64 characters
 void fillBoard(uint16_t* state, const string& sState)
 {
   assert (sState.size() == 64);
@@ -161,6 +195,8 @@ void fillBoard(uint16_t* state, const string& sState)
   } 
 }
 
+// Use this function and the fillBoard function to build interesting test cases.  Draw a board configuration
+// and give it a case number. The call this function with the appropriate test number and pass the result to fillBoard
 string sampleState(int test)
 {
   ostringstream os;
@@ -215,6 +251,16 @@ string sampleState(int test)
 	<< "rpq-p--p"
 	<< "-nb-kbnr";
 	break;
+	case 5:
+    os <<  "KB--qqqq"
+	<< "P-------"
+	<< "--------"
+	<< "--------"
+	<< "q-------"
+	<< "q-------"
+	<< "q-------"
+	<< "q------k";
+	break;
     default: assert(false);
   }
   return os.str();
@@ -253,8 +299,6 @@ void applyMove(uint16_t* state, uint16_t move)
   movePiece(state,from,to);
 }
 
-// MDR
-
 void printPiece(uint16_t val)
 {
         if(val==0) printf("-");
@@ -289,6 +333,7 @@ void printState(uint16_t *arr)
 	printf("\n**********************************************\n");
 }
 
+// Return the value of the piece at the specified block (0-63).  Zero means empty
 uint16_t getBlockVal(uint16_t *arr,int block)
 {
 	uint16_t val=arr[block/4];
@@ -1185,7 +1230,7 @@ void removePiece(uint16_t *state,uint16_t fromblock)
 	state[arrElement]=state[arrElement]&mask;
 	if(getBlockVal(state,fromblock)!=0)
 	{
-		printf("ERROR: in removePiece()\n");exit(0);
+		printf("ERROR: in removePiece(): %d\n",getBlockVal(state,fromblock));assert(false);
 	}
 }
 
@@ -1219,7 +1264,10 @@ void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock)
 	state[toElement]=(state[toElement]&destMask)|pieceMask;
 	if(getBlockVal(state,fromblock)!=0)
 	{
-		printf("ERROR: in removePiece()\n");exit(0);
+		printState(state);
+                printf("toElement: %d toOffset: %d fromblock: %d toblock: %d\n",toElement,toOffset,fromblock,toblock);
+                printf("pieceVal: %d pieceMask: %d destMask : %d \n",pieceVal,pieceMask,destMask);
+		printf("ERROR: in movePiece(): %d\n",getBlockVal(state,fromblock));assert(false);
 	}
 }
 
@@ -1285,10 +1333,15 @@ int move(uint16_t *state,bool moveWhite)
 
 }
 
-long long rankFileDests[64];
-long long diagonalDests[64];
-long long knightDests[64];
+// The following 64x64 bit structures are used to encode src/dest pairs that are plausible for
+// some pieces.  For example, the jth bith of knightDests[i] is set iff it is possible for a knight
+// to move from square i to square j.  These bit fields are populated once on initialization and then
+// never changed afterwards.
+long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
+long long diagonalDests[64]; // used for bishop, king, and queen
+long long knightDests[64]; // used only for knights
 
+// These eight directional methods are used only to initialize the ___Dests structures above.
 void north(long long* x, int row, int col)
 {
   if (row >=0) {
@@ -1355,6 +1408,8 @@ void southeast(long long* x, int row, int col)
   }
 }
 
+// The next few functions are used only to initialize the accessibility ____Dest structures
+// above.  
 void fillKnight(long long* x, int row, int col)
 {
   if ((row >= 0 && row <= 7) &&
@@ -1406,6 +1461,8 @@ void enumerateSrcDestPairs()
   }
 }
 
+// Put a q in the src square (i) and ps in all the squares that are reachable
+// for the piece type whose structure is passed in as base (e.g., knightDests)
 void displayAccessibleSquares(long long* base, int i)
 {
   uint16_t state[16];
@@ -1433,6 +1490,8 @@ bool empty(uint16_t* state, uint16_t block)
   return getBlockVal(state,block) == 0;
 }
 
+// Returns true when white=true and val denotes a white piece
+// Returns true when white=false and val denotes a black piece
 bool ownPiece(uint16_t val, bool white)
 {
   return (white && (val > 0 && val < 7)) || (!white && (val >= 7 && val < 13));  
@@ -1444,6 +1503,8 @@ bool ownPiece(uint16_t* state, uint16_t block, bool white)
   return (white && (val > 0 && val < 7)) || (!white && (val >= 7 && val < 13));  
 }
 
+// Returns true when white=true and val denotes a black piece
+// Returns true when white=false and val denotes a white piece
 bool opponentPiece(uint16_t val, bool white)
 {
   return (!white && (val > 0 && val < 7)) || (white && (val >= 7 && val < 13));  
@@ -1454,109 +1515,6 @@ bool opponentPiece(uint16_t* state, uint16_t block, bool white)
   uint16_t val = getBlockVal(state,block);
   return (!white && (val > 0 && val < 7)) || (white && (val >= 7 && val < 13));  
 }
-
-int kingLocation(uint16_t* state, bool whiteKing)
-{
-  for (int i = 0; i < 64; i++) {
-    if (getBlockVal(state,i) == (whiteKing ? 4 : 10)) return i; 
-  }
-  assert (false); // The king queried is not on the board at all!
-}
-
-int unblockedAssaultOn(uint16_t* state, int block, uint16_t* moves, int nMoves)
-{
-  for (int i = 0; i < nMoves; i++) {
-    uint16_t& move = moves[i];
-    if (!(move & BLOCKED) && extractDestination(move) == block) {
-        //cout << "CHECKED POSITION" << endl;
-        //printState(state);
-	//assert(false);
-	return true;
-    }
-  }
-  return false;
-}
-
-bool kingInCheck(uint16_t* state, bool whiteKing)
-{
-  //cout << "KING IN CHECK" << endl;
-  //printState(state);
-  static uint16_t moves[NMOVES];
-  int nMoves = 0;
-  generateAttemptableMoves(state, !whiteKing, moves, nMoves);
-  int kingLoc = kingLocation(state ,whiteKing);
-  return unblockedAssaultOn(state , kingLoc, moves, nMoves);
-
-}
-
-bool leavesKingInCheck(uint16_t* state, uint16_t move, bool whiteMove) 
-{
-  static uint16_t currentState[16];
-  applyMove(state,currentState,move);
-  //printState(currentState);
-  return kingInCheck(currentState, whiteMove);
-}
-
-
-// Adds the CHECK flag to every move that would leave the current player's king in check
-void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
-{
-  for (int i = 0; i < nMoves; i++) {
-    uint16_t& move = moves[i];
-    if (isLegal(move) && leavesKingInCheck(state,move,whiteMove)) {
-      move |= CHECKED; 
-    }
-  }
-}
-
-//void findAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves)
-//{
-//  nMoves = 0;
-//  for (int i = 0; i < 16; i++) {
-//    for (int j = 0; j < 16; j++) {
-//      if (i == j ) continue;
-//      if (ownPiece(state,i,whiteMove) && !ownPiece(state,j,whiteMove)) {
-//        moves[nMoves++] = encodeMove(i,j,false,false);
-//      }
-//    }
-//  }
-//}
-//
-//void tryAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
-//{
-//    uint16_t newState[16];
-//  for (int i = 0; i < nMoves; i++) {
-//    dispMove(moves[i]);
-//    applyMove(state,newState,moves[i]);
-//    printState(newState);
-//  }
-//}
-
-//void generateMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, uint16_t** layers, int depth, int maxdepth)
-//{
-//  if (depth == maxdepth) {
-//	//printState(state);
-//    cout << "Begin Plausible move sequence: " << depth << endl;
-//    for (int i = 0; i < depth; i++) {
-//      cout << "Move #" << i;
-//      dispMove(moveHistory[i]);
-//    }
-//    cout << "End Plausible move sequence: " << depth << endl;
-//    return;
-//  }
-//  int nMoves = 0;
-//  uint16_t newState[16];
-//  findAttemptableMoves(state, whiteMove, layers[depth], nMoves);
-//  assert (nMoves < NMOVES); // 
-//  for (int i = 0; i < nMoves; i++) {
-//    for (int j = 0; j < 3*depth; j++) cout << " ";
-//    dispMove(layers[depth][i]);
-//    applyMove(state,newState,layers[depth][i]);
-//    //printState(newState);
-//    moveHistory[depth] = layers[depth][i];
-//    generateMoves(newState,!whiteMove,moveHistory,layers,depth+1,maxdepth);
-//  } 
-//}
 
 bool isPawnTry(const uint16_t& move)
 {
@@ -1594,8 +1552,76 @@ bool hasLegalMove(uint16_t* moves, int nMoves)
       return true;
     }
   }
+  cout << "NO LEGAL MOVES" << endl;
   return false; // None of the moves was doable
 }
+
+// if whiteKing is true, return the location of the white king
+// otherwise return the location of the black king
+int kingLocation(uint16_t* state, bool whiteKing)
+{
+  for (int i = 0; i < 64; i++) {
+    if (getBlockVal(state,i) == (whiteKing ? 4 : 10)) return i; 
+  }
+  assert (false); // The king queried is not on the board at all!
+}
+
+// Return true if any of the moves in the moves array has a destination of square 
+// and is not marked as being blocked.  (Use for determining if someone is in check).
+bool unblockedAssaultOn(uint16_t* state, int square, uint16_t* moves, int nMoves)
+{
+  for (int i = 0; i < nMoves; i++) {
+    uint16_t& move = moves[i];
+    if (!(move & BLOCKED) && extractDestination(move) == square) {
+        //cout << "CHECKED POSITION" << endl;
+        //printState(state);
+	//assert(false);
+	return true;
+    }
+  }
+  return false;
+}
+
+// If whiteKing is true, this function returns true iff the white king is in check in state
+// If whiteKing is false, this function returns true iff the white black is in check in state
+bool kingInCheck(uint16_t* state, bool whiteKing)
+{
+  //cout << "KING IN CHECK" << endl;
+  //printState(state);
+  static uint16_t moves[NMOVES];
+  int nMoves = 0;
+  generateAttemptableMoves(state, !whiteKing, moves, nMoves);
+  int kingLoc = kingLocation(state ,whiteKing);
+  return unblockedAssaultOn(state , kingLoc, moves, nMoves);
+
+}
+
+bool leavesKingInCheck(uint16_t* state, uint16_t move, bool whiteMove) 
+{
+  static uint16_t currentState[16];
+  applyMove(state,currentState,move);
+  //printState(currentState);
+  return kingInCheck(currentState, whiteMove);
+}
+
+
+// Adds the CHECK flag to every move that would leave the current player's king in check.
+// The array of moves is generated (previously) in the generateAttemptable moves method,
+// This flag is not set at all.  This method is called afterwards to go back through and
+// determine whether the move puts/leaves the king in check.  Don't run the check for check
+// for blocked moves, since they will not be allowed anyway.
+void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
+{
+  for (int i = 0; i < nMoves; i++) {
+    uint16_t& move = moves[i];
+    if (isLegal(move) && leavesKingInCheck(state,move,whiteMove)) {
+      move |= CHECKED; 
+    }
+  }
+}
+
+// Just print out the sequences of states implied by moveHistory, and the number of corresponding
+// illegal attempted moves at each step
 void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* moveHistory, int nMoves)
 {
   cout << "Moves: " << endl;
@@ -1610,18 +1636,35 @@ void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* move
   }
 }
 
+// For testing purposes
 int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves)
 {
-  moveHistory[0] = encodeMove(52,36,false,false);
-  moveHistory[1] = encodeMove(12,28,false,false);
-  failedMoves[2].insert( encodeMove(36,28,true,false) );
-  moveHistory[2] = encodeMove(55,47,false,false);
-  //moveHistory[3] = encodeMove(8,9,false,false);
-  //failedMoves[3].insert
-  return 3;
+  static int testNumber = 1;
+  switch (testNumber) {
+  case 0:
+    moveHistory[0] = encodeMove(52,36,false,false);  // white king pawn advances two
+    moveHistory[1] = encodeMove(12,28,false,false); // black king pawn advances two
+    failedMoves[2].insert( encodeMove(36,28,true,false) ); // white king pawn fails to advance one more
+    moveHistory[2] = encodeMove(55,47,false,false); // white rook pawn advances 1
+    return 3;
+  case 1:
+    moveHistory[0] = encodeMove(52,36,false,false); // white king pawn advances two
+    moveHistory[1] = encodeMove(13,21,false,false); // black f pawn advances one
+    moveHistory[2] = encodeMove(36,28,false,false); // white king pawn advances one more
+    failedMoves[3].insert( encodeMove(12,28,true,false) ); // black king pawn fails to advance two
+    moveHistory[3] = encodeMove(21,28,false,false,true); // black f pawn captures white king pawn
+    moveHistory[4] = encodeMove(59,31,false,false); // white queen jumps out to h file and checks black king
+    moveHistory[5] = encodeMove(14,22,false,false); // black blocks check with g pawn
+    failedMoves[6].insert( encodeMove(31,13,true,false) ); // white tries to "jump over" the blocking g pawn
+    moveHistory[6] = encodeMove(61,52,false,false); // white moves bishop in front of king
+    failedMoves[7].insert( encodeMove(15,31,true,false) ); // black fails to advance h file pawn (because of white queen)
+    moveHistory[7] = encodeMove(22,31,false,false,true); // black captures white queen with g pawn
+    moveHistory[8] = encodeMove(52,31,false,false); // white captures pawn that captured queen and puts black in checkmate
+    return 9;
+  }
 }
 
-int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
+int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   if (depth == maxdepth) {
 	//printState(state);
@@ -1630,19 +1673,19 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
   }
   int nMoves = 0;
   uint16_t newState[16]; 
-  generateAttemptableMoves(state, whiteMove, layers[depth], nMoves);
-  checkForCheck(state, whiteMove, layers[depth], nMoves);
+  generateAttemptableMoves(state, whiteMove, levels[depth], nMoves, true);
+  checkForCheck(state, whiteMove, levels[depth], nMoves);
   assert (nMoves < NMOVES); // 
-  if (!hasLegalMove(layers[depth],nMoves)) return depth; // No legal mvoes from this state
+  if (!hasLegalMove(levels[depth],nMoves)) return depth; // No legal moves from this state
   while (true) { // Keep trying random moves until a legal one is executed
     int attemptedMoveIndex = rand() % nMoves;
-    uint16_t& move = layers[depth][attemptedMoveIndex];
+    uint16_t& move = levels[depth][attemptedMoveIndex];
     if (isLegal(move)) {
       cout << "Selected move: " << decodeMove(state,move) << endl;
       applyMove(state,newState,move);
       printState(newState);
       moveHistory[depth] = move;
-      return generateRandomMoves(newState,!whiteMove,moveHistory,failedMoves,layers,depth+1,maxdepth);
+      return generateRandomMoves(newState,!whiteMove,moveHistory,failedMoves,levels,depth+1,maxdepth);
     } else {
       failedMoves[depth].insert(move); // Note that this illegal move was attempted 
     }
@@ -1655,11 +1698,17 @@ bool samePawnTries(uint16_t* state1, uint16_t* state2, bool whiteMove)
   return true;
 }
 
+// Returns true if the player whose turn it is in check in both states or
+// is not in check in both states.
+// TODO: We are not currently declaring whether the check is on a rank, file, long diag, short diag,
+// or knight.  And in fact, it is possible to be in check from two different sources at the same time 
+// (but not more than two).  The problem is that I've run out of bits in my 16-bit encodings to set these flags
 bool sameCheckStatus(uint16_t* state1, uint16_t* state2, bool whiteMove)
 {
   return kingInCheck(state1, whiteMove) == kingInCheck(state2, whiteMove);
 }
 
+// Returns the number of moves in the array that has one or both of the CHECKED/BLOCKED flags set
 unsigned countIllegalMoves(uint16_t* moves, int nMoves)
 {
   unsigned count = 0;
@@ -1669,15 +1718,15 @@ unsigned countIllegalMoves(uint16_t* moves, int nMoves)
   return count;
 }
 
+// Returns true if "move" also appears in moveList
 bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 {
-
       for (int i = 0; i < nMoves; i++) {
         if (move == moveList[i]) {
-	  return true;  
 	  // The attempted but illegal move in the actual state is also attempted and illegal in this
 	  // possible state.  This is crucial, because if our input were the actual list of observations, those observations
 	  // for this move would have to match exactly.
+	  return true;  
         }
       }
       return false; // No matching move found
@@ -1695,16 +1744,25 @@ bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 // number of moves in possState.
 // Since both players would hear the moderator's declarations about pawn tries and "check", we do not continue unless the pawn tries and check status
 // of possState and trueState are equivalent.
+	// Arg 0: Player whose perspective we are working from.  If it's white than we assume that we know the even numbered
+        // entries in moveHistory and failedMoves EXACTLY and that we have access to the NUMBER of failedMoves for the odd 
+	// numbered moves.  For black, it's the other way around.
+	// Arg 1: actual start state
+	// Arg 2: possible start state (we always assume that we know the start state)
+	// Arg 4: whose turn it is initially
+	// Arg 5 & Arg 7: the actuall sequences of moves that were accepted and the corresponding lists of other attempted moves 
+	// Arg 6 & Arg 8: working space for tracking possible sequences of moves and the alternatives at each level
+	// Arg 9: current depth
+	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
 void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
-  uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
+  uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   // Need to check that the messages match
-  if (!samePawnTries(trueState, possState, whiteMove)) return; 
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
   if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
-  if (depth == maxdepth) {
-	// found a goal state
-	//processMoveHistory(failedMoves,moveHistory);
+  if (depth == maxdepth) { // Then we have found a solution
+	// Right now, just display the solution; eventually we'll need to do something else with it
 	uint16_t destructibleState[16];
         copyState(globalState,destructibleState);
         for (int i = 0; i < depth; i++) {
@@ -1714,76 +1772,93 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
         }
         cout << " MATCH" << endl;
+        printState(destructibleState);
 	return;
   }
+
   // Note: since the same application is being done for every call at this depth; we could just compute the
   // new global state at this depth once before the initial call and then just move a pointer around
   uint16_t newTrueState[16]; 
   applyMove(trueState,newTrueState,moveHistory[depth]);
 
   uint16_t newPossState[16]; 
-  // Note that the moves at the legality of all the moves at layers[depth] will be set according the possible state, not actual
+  // Note that the legality of all the moves at levels[depth] will be set according the possible state, not actual
   int nMoves = 0;
-  generateAttemptableMoves(possState, whiteMove, layers[depth], nMoves);
-  checkForCheck(possState, whiteMove, layers[depth], nMoves);
+  // TODO: Rather than generate ALL the moves in advance (and incur the associated penatly for storing them all at each level)
+  // we could conceivably redo things so that we only keep track of enough information (src square, direction, and offset) to
+  // generate the NEXT attemptable move
+  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
+  checkForCheck(possState, whiteMove, levels[depth], nMoves);
   assert (nMoves < NMOVES); // 
 
   if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
     SetMove& failures = failedMoves[depth];
     for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
       uint16_t move = *itr ;
-      if (!foundMatchingMove(move,layers[depth],nMoves)) return; 
-      // This means that one of the illegal moves that this player made in the actual game is not 
-      // legal/attemptable from this position.  So this position cannot be possible.
-      //if (!isAttemptable(possState,move, whiteMove)) { // One of the failed moves is not even attemptable in this state
-      //  cout << "One of the failed moves is not even attemptable in this state: " << decodeMove(*itr) << endl;
-      //  return;
-      //} else if (isLegalOnBoard(possState, move, whiteMove)) { // One of the failed moves would have succeeded in this state
-      //  cout << "One of the failed moves would have succeeded in this state: " << decodeMove(*itr) << endl;
-      //  return;
-      //}
+      if (!foundMatchingMove(move,levels[depth],nMoves)) {
+        // This means that one of the illegal moves that this player made in the actual game is not 
+        // legal/attemptable from this position.  So this overall sequence of moves is not plausible
+	// and we must prune.
+        return; 
+      }
     }
     // If we get to this point, all of the failed moves are consistent
     // We know exactly what the actual move was; make it
     uint16_t& actualMove = moveHistory[depth];
-    if (!foundMatchingMove(actualMove,layers[depth],nMoves)) return; // The legal move that was actually made is not legal here
+    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
+      // This means that the move that we know we made at this depth is not legal under this possible
+      // sequence of moves.  So we must prune.
+      return; 
+    }
+    // Otherwise, recurse 
     applyMove(possState,newPossState,actualMove);
     possHistory[depth] = actualMove;
     generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
-      moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
-  } else { // We are considering the possibilities for the opponent's moves
+      moveHistory, possHistory, failedMoves, levels, depth+1, maxdepth);
+  } else { 
+    // We are at a level in the search tree where we are considering the possible moves for the opponent.
+    // We assume that we know the number of attempted illegal moves (because we would have heard the moderator
+    // declare each one to be illegal as it was made).  But we do not know the move in moveHistory or the specific
+    // moves in failedMoves that did not succeed. 
+
     // Ensure that there are enough attemptable moves in the state to match the observed number of failed attempts
-    unsigned nIllegalMoves = countIllegalMoves(layers[depth], nMoves);
+    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
     if (nIllegalMoves < failedMoves[depth].size()) {
-	cout << "nIllegalMoves: " << nIllegalMoves << " failedMoves: " << failedMoves[depth].size() << endl;
+        // This means that the number of moves possible for the opponent at this hypothetical stage is less than the number of
+	// attemptable moves it actually tried.  So we must prune.
 	return; 
     }
+
+    // Now we want to try each possible move that is legally executable (not just attemptable) 
     for (int i = 0; i < nMoves; i++) {
-      uint16_t& move = layers[depth][i];
+      uint16_t& move = levels[depth][i];
       if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
-	//if ((moveHistory[depth] & CHECKED
         applyMove(possState,newPossState,move);
         possHistory[depth] = move;
         generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
-          moveHistory, possHistory, failedMoves, layers, depth+1, maxdepth);
+          moveHistory, possHistory, failedMoves, levels, depth+1, maxdepth);
       }
     }
   }
 }
 
 
+// If whiteMove is true, then it is white's turn to move from state.
+// Generate all the possible attemptable moves from this state.  Store each move as a 16-bit structure in moves
+// Increment nMoves for each attemptable move found. 
+// If verbose=true, print out the attemptable moves as they are found.
 void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, int& nMoves, bool verbose )
 {
   //printState(state);
-  static int8_t rookOffsets[] = {-8,1,8,-1};
-  static int8_t bishopOffsets[] = {-9,-7,9,7};
-  static int8_t knightOffsets[] = {-17,-15,-10,-6,6,10,15,17};
+  static int8_t rookOffsets[] = {-8,1,8,-1}; // -8=NORTH, 1=EAST, 8=SOUTH, -1=WEST
+  static int8_t bishopOffsets[] = {-9,-7,9,7}; // -9=NORTHWEST, -7=NORTHEAST, 9=SOUTHEAST, 7=SOUTHWEST
+  static int8_t knightOffsets[] = {-17,-15,-10,-6,6,10,15,17}; // offsets for eight potential knightMoves
+
+  // Iterate through the squares in order, looking for pieces that active player owns
   for (int src = 0; src < 64; src ++) {
     uint16_t pieceVal = getBlockVal(state,src);
-    if (!pieceVal || opponentPiece(pieceVal,whiteMove)) continue;
+    if (!pieceVal || opponentPiece(pieceVal,whiteMove)) continue; // Can't move emptiness or opponent's pieces
     uint16_t destPiece = 0;
-    long long* r = rankFileDests + src;
-    long long* b = diagonalDests + src;
     bool blocked = false;
     int dest;
      
@@ -1791,16 +1866,18 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
     if (isKnight(pieceVal)) {
       for (int i = 0; i < 8; i++) {
         uint16_t dest = src + knightOffsets[i];
-        if (dest > 63 || dest < 0) continue;
-        if (!ownPiece(state,dest,whiteMove)) {
-          if (knightDests[src] & (ONE << dest)) {
+        if (dest > 63 || dest < 0) continue; // we're shooting off the board
+        if (!ownPiece(state,dest,whiteMove)) { // can't jump onto my own piece
+          if (knightDests[src] & (ONE << dest)) { // the src/dest combo represents a legal knight move
             if (verbose) printf("knight   src: %d dest: %d\n",src,dest);
+		// TODO: Add a flag if it's a capture
             moves[nMoves++] = encodeMove(src,dest,false,false);
           }
         }
       } 
     }
     // Rook moves
+    long long* r = rankFileDests + src;
     if (movesRankFile(pieceVal)) {
       for (int dir = 0; dir < 4; dir++) { // N, E, S, W
         blocked = false;
@@ -1819,13 +1896,18 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           if (ownPiece(destPiece,whiteMove)) break; 
           if (verbose) printf("rooklike src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
+		// TODO: Add a flag if it's a capture
+	  // If the destination is occupied by an opponent's piece, this move is a capture.
+	  // Furthermore, all moves that continue in this direction should be marked as blocked
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
-          if (isKing(pieceVal)) break;
+          if (isKing(pieceVal)) break; // King can move only one square, so look no further in this dir
         }
       }
     }
-    // Bishop moves
-    if (movesDiagonal(pieceVal)) {
+    // Bishop moves -- this is copy/paste code from rook moves and can be extracted into its 
+    // own function;
+    long long* b = diagonalDests + src;
+    if (movesDiagonal(pieceVal)) { // Only consider diagonal moves for bishops, queens, and kings
       //displayAccessibleSquares(diagonalDests,src);
       for (int dir = 0; dir < 4; dir++) { // NW, NE, SE, SW
         blocked = false;
@@ -1836,19 +1918,22 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           destPiece = getBlockVal(state,dest);
           if (ownPiece(destPiece,whiteMove)) break; 
           if (verbose) printf("diagonal src: %d dest: %d blocked: %d\n",src,dest,blocked);
+		// TODO: Add a flag if it's a capture
+	  // If the destination is occupied by an opponent's piece, this move is a capture.
+	  // Furthermore, all moves that continue in this direction should be marked as blocked
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
-          if (isKing(pieceVal)) break;
+          if (isKing(pieceVal)) break; // King can move only one square, so look no further in this dir
         }
       }
     }
     // Pawn moves
     if (pieceVal == 6 || pieceVal == 12) { // pawns
-      dest = (pieceVal == 6) ? src - 8 : src + 8;
+      dest = (pieceVal == 6) ? src - 8 : src + 8; // Can move forward or backward depending on color
       if (dest > 0 && dest < 64) {
         destPiece = getBlockVal(state,dest);
         blocked = opponentPiece(destPiece,whiteMove);
-        if (!ownPiece(destPiece,whiteMove)) {
+        if (!ownPiece(destPiece,whiteMove)) { // I can attempt to move one square forward
           if (verbose) printf("pawnmove src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
           // check for possibility of jumping 2
@@ -1863,15 +1948,16 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           }
         }
       }
+      // The squares where the pawn can capture will be +/- 1 from the "move ahead one" square
       dest++;
-      if (dest > 0 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
+      if (dest >= 0 && dest < 64 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
           if (verbose) printf("pawncapt src: %d dest: %d \n",src,dest);
-          moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY
+          moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY CODE
       }
       dest -= 2;
-      if (dest > 0 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
+      if (dest >= 0 && dest < 64 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
           if (verbose) printf("pawncapt src: %d dest: %d \n",src,dest);
-          moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13);
+          moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY CODE
       }
     }
   }
@@ -1879,73 +1965,68 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 
 int main(int argc, char* argv[])
 {
-  enumerateSrcDestPairs();
-  //assert (argc == 2);
-  //srand(atoi(argv[1]));
-  //srand(63214234);
-  srand(time(0));
-  //for (int i = 0; i < 64; i++) displayAccessibleSquares(diagonalDests,i);
-/*******************************************************************************************
-//	Start config
-//	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
-******************************************************************************************/
-//	uint16_t state[16]={30874,47495,0,52428,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
-//	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,0,26214,4660,21281};
-//	uint16_t state[16]={30874,47495,0,0,0,0,0,0,0,0,0,0,26214,26214,4660,21281};
-//	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,0,0,0,4660,21281};
-	//uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
-	uint16_t attemptableMoves[NMOVES*NLAYERS];
-        uint16_t moveHistory[NLAYERS];
-        uint16_t possHistory[NLAYERS];
-	uint16_t* moveList[NLAYERS];
-        for (int i = 0; i < NLAYERS; i++) {
+	// One time set up to mark plausible src/destination pairs for different piece types
+        enumerateSrcDestPairs();
+        //assert (argc == 2);
+        //srand(atoi(argv[1]));
+        srand(63214234);
+        //srand(time(0));
+
+	// Keep lists of moves that are attemptable at each depth
+	uint16_t attemptableMoves[NMOVES*MAXDEPTH];
+
+	// Partition the space allocated above into different levels, where each level allows for NMOVES moves
+        // This is done to avoid having to reallocate memory every time we want to generate a new list of moves
+        // and also to potentially improve the spatial locality of the program
+	uint16_t* moveList[MAXDEPTH];
+        for (int i = 0; i < MAXDEPTH; i++) {
 		moveList[i] = &attemptableMoves[i*NMOVES];
         }
-	int nMovesByLayer[NLAYERS];
-        VecSetMove failedMoves(NLAYERS);
+
+	// Generate an actual sequence of moves; then use this sequence of moves (implicitly the observations
+        // that would have been received from ONE of the players if this WERE the actual sequence of moves
+        // to generate the information set -- the set of ALL sequences of moves (including this one) for which
+        // the observations would be the same
+        uint16_t moveHistory[MAXDEPTH];
+
+	// Keep track of the list of failed moves at each step.  failedMoves[i] gives the set of moves that were
+	// attempted but not accepted before the corresponding legal move in moveHistory[i] was issued.
+        VecSetMove failedMoves(MAXDEPTH);
+
+        // Use this to keep track of POSSIBLE sequences of moves that match the (implied) observations from moveHistory
+        // If we ever make it to the deepest level without generating a conflict, then we have found a solution in the 
+        // search tree
+        uint16_t possHistory[MAXDEPTH];
+
+	// Initialize board to any starting configuration of interest
+	// state will contain the start state of interest
 	uint16_t state[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	uint16_t stateCopy[16];
-        int nMoves = 0;
  	string s = sampleState(0);
         fillBoard(state,s);
-        //printState(state);
-        //applyMove(state,stateCopy,202);
-        //printState(stateCopy);
-        //return 0;
-        //generateAttemptableMoves(state,true,moveList[0],nMoves);
-	//printState(state);	
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,100);
-	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
-        cout << nExecutedMoves << endl;
-	return 0;
         copyState(state,stateCopy);
         copyState(state,globalState);
-        processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
-	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
-        generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
-//void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
- // uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** layers, int depth, int maxdepth)
-	//findAttemptableMoves(state,true,attemptableMoves,nMoves);
-	//tryAttemptableMoves(state,true,attemptableMoves,nMoves);
-	//movePiece(state,0,15);	
-	//movePiece(state,63,47);	
-	//movePiece(state,47,46);	
-	//movePiece(state,60,0);	
-	//printState(state);	
 
-/*  Checking pawn kill */
-//	uint16_t state[16]={30874,47495,52428,52416,0,0,0,0,0,0,0,12,26214,26214,4660,21281};
-/*  Checking Rook kill */
-//	uint16_t state[16]={30874,47488,52428,52428,0,0,0,0,0,0,0,7,26214,26214,4660,21281};
-/*  Checking Bishop kill */
-//	uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,9,26214,26214,4660,21281};
-/*  Checking Knight kill */
-//  uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,8,26214,26214,4660,21281};
-/*  Checking King kill */
-//  uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,10,26214,26214,4660,21281};
-/*  Checking Queen kill */
-//  uint16_t state[16]={30874,47495,52428,52428,0,0,0,0,0,0,0,11,26214,26214,4660,21281};
-//	printState(state);
-	//move(state,true);
+	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
+        int nMoves = 0;
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
+	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
+	// Display the actual sequence of moves (for testing/debugging purposes)
+        cout << nExecutedMoves << endl;
+        processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
+	//return 0;
+
+	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
+	// Arg 0: Player whose perspective we are working from.  If it's white than we assume that we know the even numbered
+        // entries in moveHistory and failedMoves EXACTLY and that we have access to the NUMBER of failedMoves for the odd 
+	// numbered moves.  For black, it's the other way around.
+	// Arg 1: actual start state
+	// Arg 2: possible start state (we always assume that we know the start state)
+	// Arg 4: whose turn it is initially
+	// Arg 5 & Arg 7: the actuall sequences of moves that were accepted and the corresponding lists of other attempted moves 
+	// Arg 6 & Arg 8: working space for tracking possible sequences of moves and the alternatives at each level
+	// Arg 9: current depth
+	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
+        generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 	return 0;
 }
