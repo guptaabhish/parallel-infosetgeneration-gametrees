@@ -12,6 +12,9 @@
 #include <string.h> // memcpy
 using namespace std;
 
+int nSolutions;
+//#define PRINT_SOLUTIONS 
+
 // Use sets of moves to keep track of the list of all illegal moves that were tried before
 // a legal move was made.  Sets make sense here because it doesn't matter what order the moves
 // were tried in.
@@ -1762,7 +1765,9 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
   if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
   if (depth == maxdepth) { // Then we have found a solution
+	nSolutions++;
 	// Right now, just display the solution; eventually we'll need to do something else with it
+#ifdef PRINT_SOLUTIONS
 	uint16_t destructibleState[16];
         copyState(globalState,destructibleState);
         for (int i = 0; i < depth; i++) {
@@ -1771,8 +1776,9 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 	  applyMove(destructibleState,possHistory[i]);
 	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
         }
-        cout << " MATCH" << endl;
+        cout << endl;
         printState(destructibleState);
+#endif
 	return;
   }
 
@@ -1965,6 +1971,8 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 
 int main(int argc, char* argv[])
 {
+        nSolutions = 0;
+
 	// One time set up to mark plausible src/destination pairs for different piece types
         enumerateSrcDestPairs();
         //assert (argc == 2);
@@ -2028,5 +2036,6 @@ int main(int argc, char* argv[])
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
         generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+	cout << "Solutions founds: " << nSolutions << endl;
 	return 0;
 }
