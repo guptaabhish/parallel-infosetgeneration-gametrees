@@ -20,14 +20,19 @@ int vertices;
 size_t max_stack_size;
 int max_stack_nodes;
 
-bool whitePerspective;
-vector< vector<uint16_t> > trueState;
-vector<uint16_t> moveHistory;
-int maxdepth;
-vector< set<uint16_t> > failedMoves;
+uint16_t trueState1[16];
 
-vector<long long> rankFileDests; // Rook-like moves; used for rook, king, queen
-vector<long long> diagonalDests; // used for bishop, king, and queen
+
+bool whitePerspective;
+
+//vector< vector<uint16_t> > trueState;
+
+uint16_t moveHistory[100];
+int maxdepth;
+vector< set<uint16_t> > failedMoves(100);
+
+long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
+long long diagonalDests[64]; // used for bishop, king, and queen
 long long knightDests[64]; // used only for knights
 //	globalState
 vector<uint16_t> globalState;
@@ -35,11 +40,11 @@ vector<uint16_t> globalState;
 #define MAX_BRANCH 25
 #define MAX_DEPTH 4
 #define MAX_CHILDREN 64
-//#define DEBUG
+#define DEBUG
 //#define ONESOL
 
 
-int nSolutions;
+int nSolutions=0;
 //#define PRINT_SOLUTIONS 
 
 // Use sets of moves to keep track of the list of all illegal moves that were tried before
@@ -63,6 +68,8 @@ const int NMOVES = 1000;
 // Maximum number of legal moves in a sequence of moves from the start state.
 // This can be changed and will affect the amount of memory allocated up front and the spatial locality
 // of the program
+
+///////////// This should be 100.. it is hardcoded in ci file
 const int MAXDEPTH = 100;
 
 // Number of uint16_t data in a state.  This cannot be changed without redoing everything.
@@ -391,6 +398,9 @@ int moveQueen(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newS
 	//straight moves
 	statesR=moveRook(state,moveWhite,fromblock,&newStatesR,true);
 	totalStates=statesB+statesR;
+
+	(*newStates)=new uint16_t*[totalStates];
+
 	for(int i=0;i<statesB;i++) (*newStates)[i]=newStatesB[i];
 	for(int i=0;i<statesR;i++) (*newStates)[i+statesB]=newStatesR[i];
 	printf("\n\nQueen at %d block can move %d moves\n",fromblock,totalStates);
@@ -1486,12 +1496,12 @@ void enumerateKnight(long long* x, int i)
 void enumerateSrcDestPairs()
 {
   for (int i = 0; i < 64; i++) {
-//    enumerateRankFile(rankFileDests+i,i);
-	enumerateRankFile(&rankFileDests[i],i);
-//    enumerateDiagonals(diagonalDests+i,i);
-	enumerateDiagonals(&diagonalDests[i],i);
-//    enumerateKnight(knightDests+i,i);
-	enumerateKnight(&knightDests[i],i);
+    enumerateRankFile(rankFileDests+i,i);
+//	enumerateRankFile(&rankFileDests[i],i);
+    enumerateDiagonals(diagonalDests+i,i);
+//	enumerateDiagonals(&diagonalDests[i],i);
+    enumerateKnight(knightDests+i,i);
+//	enumerateKnight(&knightDests[i],i);
 
 
   }
@@ -1658,7 +1668,7 @@ void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
 
 // Just print out the sequences of states implied by moveHistory, and the number of corresponding
 // illegal attempted moves at each step
-void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* moveHistory, int nMoves)
+void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, uint16_t * moveHistory, int nMoves)
 {
   cout << "Moves: " << endl;
   printState(state);
@@ -1700,7 +1710,7 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
   }
 }
 
-int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves, uint16_t** levels, int depth, int maxdepth)
+int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory, vector< set <uint16_t> >failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   if (depth == maxdepth) {
 	//printState(state);
@@ -1802,7 +1812,7 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
 	uint16_t destructibleState[16];
-        copyState(globalState,destructibleState);
+//TODO UNCOMMENT        copyState(globalState,destructibleState);
         for (int i = 0; i < depth; i++) {
 	  if (i%2 == 0) cout << (i/2+1) << ". ";
 	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
@@ -1916,8 +1926,8 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
       } 
     }
     // Rook moves
-//    long long* r = rankFileDests + src;
-	long long* r = &rankFileDests[src];
+    long long* r = rankFileDests + src;
+//	long long* r = &rankFileDests[src];
     if (movesRankFile(pieceVal)) {
       for (int dir = 0; dir < 4; dir++) { // N, E, S, W
         blocked = false;
@@ -1946,8 +1956,8 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
     }
     // Bishop moves -- this is copy/paste code from rook moves and can be extracted into its 
     // own function;
-//    long long* b = diagonalDests + src;
-	 long long* b = &diagonalDests[src];
+    long long* b = diagonalDests + src;
+//	 long long* b = &diagonalDests[src];
 
     if (movesDiagonal(pieceVal)) { // Only consider diagonal moves for bishops, queens, and kings
       //displayAccessibleSquares(diagonalDests,src);
@@ -2014,6 +2024,7 @@ public:
 	int k;
 	uint16_t board[16]; //this is posststate
 	uint16_t * possHistory; 
+	uint16_t trueState[16]; 
 	bool moveWhite;
 
 
@@ -2078,6 +2089,7 @@ class HcCore: public AppCore {
 		 startState->possHistory=NULL;
 		 startState->k = 0;
 		 copy(&state[0],&state[16],&startState->board[0]);
+		 copy(&state[0],&state[16],&startState->trueState[0]);
 	//	 startState->board 
 		 qs->push(startState);
 
@@ -2094,7 +2106,11 @@ class HcCore: public AppCore {
 	  
 	  uint16_t * possState = parent->board;
 	  int whiteMove = parent->moveWhite;
+
+	 parent->possHistory = (uint16_t *)((char *)parent +sizeof(HcState));
+
 	  uint16_t *possHistory = parent->possHistory;
+	  uint16_t *trueState = parent->trueState;
 
 #ifdef DEBUG
 		CkPrintf("Expanding state with depth %d  : \n", parentk);
@@ -2107,6 +2123,9 @@ class HcCore: public AppCore {
 #ifdef DEBUG
 		CkPrintf("Goal reached \n"); 
 #endif
+	nSolutions++;
+	CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+
 		return;
 	}
 	//statesExpanded++;
@@ -2117,23 +2136,22 @@ class HcCore: public AppCore {
 
 	//TODO
 	  // Need to check that the messages match
-//  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
- // if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
+  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
   if (depth == maxdepth) { // Then we have found a solution
-	nSolutions++;
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
 	uint16_t destructibleState[16];
-        copyState(globalState,destructibleState);
+   //TODO UNCOMMENT     copyState(globalState,destructibleState);
         for (int i = 0; i < depth; i++) {
 	  if (i%2 == 0) cout << (i/2+1) << ". ";
-	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
+	  CkPrintf("%s ", decodeMove(destructibleState,possHistory[i])) ;
 	  applyMove(destructibleState,possHistory[i]);
 	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
         }
-        cout << endl;
-        printState(destructibleState);
+       // Ckut << endl;
+      //  printState(destructibleState);
 #endif
 	return;
   }
@@ -2141,23 +2159,23 @@ class HcCore: public AppCore {
   // Note: since the same application is being done for every call at this depth; we could just compute the
   // new global state at this depth once before the initial call and then just move a pointer around
   uint16_t newTrueState[16]; 
-  //applyMove(trueState,newTrueState,moveHistory[depth]);
-
+  applyMove(trueState,newTrueState,moveHistory[depth]);
+	uint16_t levels[NMOVES];
   uint16_t newPossState[16]; 
   // Note that the legality of all the moves at levels[depth] will be set according the possible state, not actual
   int nMoves = 0;
   // TODO: Rather than generate ALL the moves in advance (and incur the associated penatly for storing them all at each level)
   // we could conceivably redo things so that we only keep track of enough information (src square, direction, and offset) to
   // generate the NEXT attemptable move
-  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
-  checkForCheck(possState, whiteMove, levels[depth], nMoves);
+  generateAttemptableMoves(possState, whiteMove, levels, nMoves,false);
+  checkForCheck(possState, whiteMove, levels, nMoves);
   assert (nMoves < NMOVES); // 
 
   if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
     SetMove& failures = failedMoves[depth];
     for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
       uint16_t move = *itr ;
-      if (!foundMatchingMove(move,levels[depth],nMoves)) {
+      if (!foundMatchingMove(move,levels,nMoves)) {
         // This means that one of the illegal moves that this player made in the actual game is not 
         // legal/attemptable from this position.  So this overall sequence of moves is not plausible
 	// and we must prune.
@@ -2167,7 +2185,7 @@ class HcCore: public AppCore {
     // If we get to this point, all of the failed moves are consistent
     // We know exactly what the actual move was; make it
     uint16_t& actualMove = moveHistory[depth];
-    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
+    if (!foundMatchingMove(actualMove,levels,nMoves)) {
       // This means that the move that we know we made at this depth is not legal under this possible
       // sequence of moves.  So we must prune.
       return; 
@@ -2186,11 +2204,12 @@ class HcCore: public AppCore {
 				applyMove(possState,child->board,actualMove);
 				//set possHistory
 
-				for(int p =0; p <child->k; p++)
+				child->possHistory = (uint16_t *)((char *)child +sizeof(HcState));
+				for(int p =0; p <child->k-1; p++)
 						child->possHistory[p] = possHistory[p];
 
 				child->possHistory[depth] = actualMove;
-			//	copy(&possHistory, &possHistory[j][16], child->board);
+				copy(&newTrueState[0], &newTrueState[16], child->trueState);
 
 				qs->push(child);
 				childnum++;
@@ -2213,7 +2232,7 @@ class HcCore: public AppCore {
     // moves in failedMoves that did not succeed. 
 
     // Ensure that there are enough attemptable moves in the state to match the observed number of failed attempts
-    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
+    unsigned nIllegalMoves = countIllegalMoves(levels, nMoves);
     if (nIllegalMoves < failedMoves[depth].size()) {
         // This means that the number of moves possible for the opponent at this hypothetical stage is less than the number of
 	// attemptable moves it actually tried.  So we must prune.
@@ -2222,7 +2241,7 @@ class HcCore: public AppCore {
 
     // Now we want to try each possible move that is legally executable (not just attemptable) 
     for (int i = 0; i < nMoves; i++) {
-      uint16_t& move = levels[depth][i];
+      uint16_t& move = levels[i];
       if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
 
 	HcState *child = (HcState *)qs->registerState(sizeof(HcState) + (depth+1)*sizeof(uint16_t), childnum, MAX_CHILDREN);
@@ -2233,10 +2252,13 @@ class HcCore: public AppCore {
 				applyMove(possState,child->board,move);
 				//set possHistory
 
-				for(int p =0; p <child->k; p++)
-						child->possHistory[child->k] = possHistory[p];
+				child->possHistory = (uint16_t *)((char *)child +sizeof(HcState));
+				for(int p =0; p <(child->k)-1; p++)
+						child->possHistory[p] = possHistory[p];
 
 				child->possHistory[depth] = move;
+				
+				copy(&newTrueState[0], &newTrueState[16], child->trueState);
 			//	copy(&possHistory, &possHistory[j][16], child->board);
 
 				qs->push(child);
@@ -2371,176 +2393,121 @@ class HcCore: public AppCore {
 	  }
 	*/
 	 else{
-        recursive_hc(parent);
+			 	uint16_t attemptableMoves[NMOVES*MAXDEPTH];
+
+	// Partition the space allocated above into different levels, where each level allows for NMOVES moves
+        // This is done to avoid having to reallocate memory every time we want to generate a new list of moves
+        // and also to potentially improve the spatial locality of the program
+	uint16_t* moveList[MAXDEPTH];
+        for (int i = 0; i < MAXDEPTH; i++) {
+		moveList[i] = &attemptableMoves[i*NMOVES];
+        }
+
+        recursive_hc(parent->trueState,parent->board,!parent->moveWhite,parent->possHistory,parent->k+1,moveList);
       }
     }
 
-    void recursive_hc(HcState *parent){
-      int childnum = 0;
-	  int parentk = parent->k;
-	  uint16_t * state = parent->board;
-	  int moveWhite = parent->moveWhite;
+    void recursive_hc(uint16_t *trueState,uint16_t *possState,bool whiteMove,uint16_t *possHistory,int depth,uint16_t **levels){
 
-	if(parentk == MAX_DEPTH )
-	{
-#ifdef DEBUG
-		CkPrintf("Goal reached \n"); 
-#endif
-		return;
-	}
-				/* Node expansion logic ..... ***************************************/
-//	statesExpanded++;
 
-	 uint16_t allowMoves=0;
-	if(moveWhite)	
-	{
 
-			int i;
-		for(i=0;i<64;i++)
-		{
-		//	CkPrintf("Bef i %d\n",i);
-			int newStates=0;
-			// If it is a white piece then try moving it
-			int val=getBlockVal(state,i);
-//			if(val<7 && val>0)
-			{
-#ifdef DEBUG
-				if(i==49) CkPrintf("A white piece at %d\n",val);
-#endif
-				uint16_t **newstates;
-        			if(val==1) newStates=moveRook(state,moveWhite,i,&newstates,false);
-			        else if(val==2) newStates=moveKnight(state,moveWhite,i,&newstates);
-			        else if(val==3) newStates=moveBishop(state,moveWhite,i,&newstates,false);
-			        else if(val==4) newStates=moveKing(state,moveWhite,i,&newstates);
-			        else if(val==5) newStates=moveQueen(state,moveWhite,i,&newstates);
-			        else if(val==6) newStates=movePawn(state,moveWhite,i,&newstates);				
-				allowMoves+=newStates;
+  // Need to check that the messages match
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
+  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
-#ifdef DEBUG
-				if(i==54 && newStates>0)
-				{
-//					printf("DDDDDDDDDDDDDDDDDDDDd newStates=%d\n",newStates);
-					for(int i=0;i<newStates;i++)
-	                        	       printState(newstates[i]);
-				}
-#endif
+  if (depth == maxdepth) { // Then we have found a solution
+	nSolutions++;
+	CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
-	/* ***************************************/
-// Push the new states onto queue 
-				int j;
-				for(j =0; j <newStates; j++) 
-				{
-				HcState *child ;
-				//	HcState *child = (HcState *)qs->registerState(sizeof(HcState));
-				child->k = parentk+1;
-				child->moveWhite = false;
-				copy(&newstates[j][0], &newstates[j][16], child->board);
-				recursive_hc(child);
-				//Free newStates
-				delete [] newstates[j];
-						
-				}
-				if(newStates !=0)
-				delete [] newstates;
-	/* ***************************************/
-// Pushed the new states onto queue 
-
-			}
-		}
-#ifdef DEBUG
-		CkPrintf("White has %d allowed moves\n",allowMoves);
-#endif
-	}
-        else
-        {
-				int i;
-                for(i=0;i<64;i++)
-                {
-                        int newStates=0;
-                        // If it is a white piece then try moving it
-                        int val=getBlockVal(state,i);
-//                      if(val<7 && val>0)
-                        {
-#ifdef DEBUG
-                                if(i==8) printf("A white piece at %d\n",val);
-#endif
-                                uint16_t **newstates;
-                                if(val==7) newStates=moveRook(state,moveWhite,i,&newstates,false);
-                                else if(val==8) newStates=moveKnight(state,moveWhite,i,&newstates);
-                                else if(val==9) newStates=moveBishop(state,moveWhite,i,&newstates,false);
-                                else if(val==10) newStates=moveKing(state,moveWhite,i,&newstates);
-                                else if(val==11) newStates=moveQueen(state,moveWhite,i,&newstates);
-                                else if(val==12) newStates=movePawn(state,moveWhite,i,&newstates);
-                                allowMoves+=newStates;
-#ifdef DEBUG
-                                if(i==47 && newStates>0)
-                                {
-//                                        printf("DDDDDDDDDDDDDDDDDDDDd i=%d newStates=%d\n",i,newStates);
-                                      for(int i=0;i<newStates;i++)
-                                              printState(newstates[i]);
-                                }
-#endif
-				int j;
-				for(j =0; j <newStates; j++) 
-				{
-				HcState *child;
-				child->k = parentk+1;
-				child->moveWhite = true;
-				copy(&newstates[j][0], &newstates[j][16], child->board);
-				recursive_hc(child);
-				//Free newStates
-				delete [] newstates[j];
-						
-				}
-
-				if(newStates !=0)
-				delete [] newstates;
-                        }
-                }
-#ifdef DEBUG
-                CkPrintf("Black has %d allowed moves\n",allowMoves);
-#endif
+	// Right now, just display the solution; eventually we'll need to do something else with it
+#ifdef PRINT_SOLUTIONS
+	uint16_t destructibleState[16];
+        copyState(globalState,destructibleState);
+        for (int i = 0; i < depth; i++) {
+	  if (i%2 == 0) cout << (i/2+1) << ". ";
+	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
+	  applyMove(destructibleState,possHistory[i]);
+	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
         }
+        cout << endl;
+        printState(destructibleState);
+#endif
+	return;
+  }
 
-	/* Node eaxpansion logic  finish..... ***************************************/
-	//							foundSolution();
+  // Note: since the same application is being done for every call at this depth; we could just compute the
+  // new global state at this depth once before the initial call and then just move a pointer around
+  uint16_t newTrueState[16]; 
+  applyMove(trueState,newTrueState,moveHistory[depth]);
 
-			/*   
-		
-		//check for impossibility
-	
+  uint16_t newPossState[16]; 
+  // Note that the legality of all the moves at levels[depth] will be set according the possible state, not actual
+  int nMoves = 0;
+  // TODO: Rather than generate ALL the moves in advance (and incur the associated penatly for stori
 
-			//check for forced move
-		int forced = 0;
-	
-		if(forced ==0){
+ // TODO: Rather than generate ALL the moves in advance (and incur the associated penatly for storing them all at each level)
+  // we could conceivably redo things so that we only keep track of enough information (src square, direction, and offset) to
+  // generate the NEXT attemptable move
+  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
+  checkForCheck(possState, whiteMove, levels[depth], nMoves);
+  assert (nMoves < NMOVES); // 
 
-		for(int i = start; i <end; i++){
-						if(parentk == vertices)
-	
+  if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
+    SetMove& failures = failedMoves[depth];
+    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
+      uint16_t move = *itr ;
+      if (!foundMatchingMove(move,levels[depth],nMoves)) {
+        // This means that one of the illegal moves that this player made in the actual game is not 
+        // legal/attemptable from this position.  So this overall sequence of moves is not plausible
+	// and we must prune.
+        return; 
+      }
+    }
+    // If we get to this point, all of the failed moves are consistent
+    // We know exactly what the actual move was; make it
+    uint16_t& actualMove = moveHistory[depth];
+    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
+      // This means that the move that we know we made at this depth is not legal under this possible
+      // sequence of moves.  So we must prune.
+      return; 
+    }
+    // Otherwise, recurse 
+    applyMove(possState,newPossState,actualMove);
+    possHistory[depth] = actualMove;
+    recursive_hc(newTrueState, newPossState, !whiteMove, 
+      possHistory, depth+1,levels);
+  } else { 
+    // We are at a level in the search tree where we are considering the possible moves for the opponent.
+    // We assume that we know the number of attempted illegal moves (because we would have heard the moderator
+    // declare each one to be illegal as it was made).  But we do not know the move in moveHistory or the specific
+    // moves in failedMoves that did not succeed. 
 
-				{
-									foundSolution();
-											}
-				}
-				else if(parent->ispresent(dest)==0){
-				//		statesExpanded++;
-						parent->path[parentk]=dest;
-						parent->in_path[dest] = 1;
-						parent->k = parentk+1;
-						parent->v = dest;
-						recursive_hc(parent);
-						parent->k = parentk;
-						parent->v = v;
-						parent->in_path[dest] = 0;
+    // Ensure that there are enough attemptable moves in the state to match the observed number of failed attempts
+    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
+    if (nIllegalMoves < failedMoves[depth].size()) {
+        // This means that the number of moves possible for the opponent at this hypothetical stage is less than the number of
+	// attemptable moves it actually tried.  So we must prune.
+	return; 
+    }
 
-						//reset counts
-				}
-		}
+    // Now we want to try each possible move that is legally executable (not just attemptable) 
+    for (int i = 0; i < nMoves; i++) {
+      uint16_t& move = levels[depth][i];
+      if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
+        applyMove(possState,newPossState,move);
+        possHistory[depth] = move;
+        recursive_hc(newTrueState, newPossState, !whiteMove, 
+          possHistory, depth+1,levels);
+      }
+    }
 
-        }
-*/
-		
+
+
+
+
+			//////////////////////////////////////////////////////
+
+	}
 	}
 
 	//Is it used ??
@@ -2609,7 +2576,10 @@ Hc::Hc( CkArgMsg* msg )
 	// Keep track of the list of failed moves at each step.  failedMoves[i] gives the set of moves that were
 	// attempted but not accepted before the corresponding legal move in moveHistory[i] was issued.
        // VecSetMove failedMoves(MAXDEPTH);
-
+	/*	set <uint16_t>
+		for(int k =0; k <MAXDEPTH; k++)
+				failedMoves.push_back(new set<uint16_t>);
+				*/
         // Use this to keep track of POSSIBLE sequences of moves that match the (implied) observations from moveHistory
         // If we ever make it to the deepest level without generating a conflict, then we have found a solution in the 
         // search tree
@@ -2628,17 +2598,17 @@ Hc::Hc( CkArgMsg* msg )
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
 
-		//TODO
-// UNCOMMENT		int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
+		
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,MAX_DEPTH);
 
-
+	maxdepth = nExecutedMoves;
 
 //int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
 
-		//TODO
-//UNCOMMENT		cout << nExecutedMoves << endl;
-//UNCOMMENT        processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
+		
+		cout << nExecutedMoves << endl;
+        processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
 	//return 0;
 
 	cout << "BEGINNING INFORMATION SET GENERATION" << endl;

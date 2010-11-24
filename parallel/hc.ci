@@ -3,13 +3,13 @@ mainmodule hc
     extern module searchEngine;
 
 	readonly bool whitePerspective;
-    readonly vector< vector<uint16_t> > trueState;
-    readonly vector<uint16_t> moveHistory;
+//    readonly vector< vector<uint16_t> > trueState;
+    readonly uint16_t moveHistory[100];
 	readonly int maxdepth;
     readonly vector< set<uint16_t> > failedMoves;
 
-	readonly vector<long long> rankFileDests; // Rook-like moves; used for rook, king, queen
-	readonly vector<long long> diagonalDests; // used for bishop, king, and queen
+	readonly long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
+	readonly long long diagonalDests[64]; // used for bishop, king, and queen
 	readonly long long knightDests[64]; // used only for knights
 	readonly vector<uint16_t> globalState;
 

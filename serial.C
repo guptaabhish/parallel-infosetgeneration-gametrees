@@ -364,6 +364,8 @@ int moveQueen(uint16_t *state,bool moveWhite,uint16_t fromblock,uint16_t ***newS
 	//straight moves
 	statesR=moveRook(state,moveWhite,fromblock,&newStatesR,true);
 	totalStates=statesB+statesR;
+	(*newStates)=new uint16_t*[totalStates];
+
 	for(int i=0;i<statesB;i++) (*newStates)[i]=newStatesB[i];
 	for(int i=0;i<statesR;i++) (*newStates)[i+statesB]=newStatesR[i];
 	printf("\n\nQueen at %d block can move %d moves\n",fromblock,totalStates);
@@ -2017,7 +2019,7 @@ int main(int argc, char* argv[])
 
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,4);
 	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
         cout << nExecutedMoves << endl;
