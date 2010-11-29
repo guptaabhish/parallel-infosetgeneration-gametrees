@@ -166,6 +166,7 @@ void SearchConductor::allSearchNodeDone( DUMMYMSG *msg ){
 #endif
           if( currentSearchDepth < 0 ){
             //|| currentSearchDepth > engineCore->searchDepthLimit() ){
+    CkPrintf( "Allsearchnodedone:  solution is found in %lf sec, with %d processors\n",  CkWallTimer()-startTime, CkNumPes() );	
             CkExit();
             return;
           }
@@ -245,6 +246,7 @@ void SearchGroup::killSearch()
     conductorOnSamePE = false;
     CkPrintf("[%d] First solution time: %f s\n", CkMyPe(), CkWallTimer()-startTime);
   }
+    CkPrintf( "Kill search solution is found in %lf sec, with %d processors\n",  CkWallTimer()-startTime, CkNumPes() );	
   CkExit();
 }
 

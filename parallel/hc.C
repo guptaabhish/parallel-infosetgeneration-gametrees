@@ -38,9 +38,9 @@ long long knightDests[64]; // used only for knights
 vector<uint16_t> globalState;
 
 #define MAX_BRANCH 25
-#define MAX_DEPTH 4
+#define MAX_DEPTH 6
 #define MAX_CHILDREN 64
-#define DEBUG
+//#define DEBUG
 //#define ONESOL
 
 
@@ -2120,11 +2120,13 @@ class HcCore: public AppCore {
 			  //Check if it is a solution 
 	if(parentk == MAX_DEPTH )
 	{
+
+	nSolutions++;
 #ifdef DEBUG
 		CkPrintf("Goal reached \n"); 
+		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+
 #endif
-	nSolutions++;
-	CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
 		return;
 	}
