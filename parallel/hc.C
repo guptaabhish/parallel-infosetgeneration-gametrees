@@ -38,7 +38,7 @@ long long knightDests[64]; // used only for knights
 vector<uint16_t> globalState;
 
 #define MAX_BRANCH 25
-#define MAX_DEPTH 6
+#define MAX_DEPTH 8
 #define MAX_CHILDREN 64
 //#define DEBUG
 //#define ONESOL
@@ -188,7 +188,7 @@ string decodeMove(uint16_t* state, uint16_t move)
 // Simple move display -- Not important
 void dispMove(uint16_t from, uint16_t to, bool blocked, bool checked)
 {
-  cout << "from: " << from << " to: " << to << " blocked: " << blocked << " checked: " << checked << endl;
+//  cout << "from: " << from << " to: " << to << " blocked: " << blocked << " checked: " << checked << endl;
 }
 
 void dispMove(uint16_t move)
@@ -316,7 +316,9 @@ void applyMove(uint16_t* oldState, uint16_t* newState, uint16_t move)
   uint16_t to;
   bool checked;
   bool blocked;
+  assert(move!=0);
   decodeMove (move, from, to, blocked, checked);
+  assert(from!=to);
   assert (!blocked);
   assert (!checked);
   memcpy(newState,oldState,sizeof(uint16_t)*16);
@@ -330,7 +332,9 @@ void applyMove(uint16_t* state, uint16_t move)
   uint16_t to;
   bool checked;
   bool blocked;
+  assert(move!=0);
   decodeMove (move, from, to, blocked, checked);
+  assert(from!=to);
   assert (!blocked);
   assert (!checked);
   movePiece(state,from,to);
@@ -1300,7 +1304,7 @@ void movePiece(uint16_t *state,uint16_t fromblock, uint16_t toblock)
 		case 3: destMask=0xFFF0; break;
 		default: assert(false);
 	}
-	//printf("destMask: %d pieceMask%d\n",destMask,pieceMask);
+//	printf("destMask: %d pieceMask%d\n",destMask,pieceMask);
 	state[toElement]=(state[toElement]&destMask)|pieceMask;
 	if(getBlockVal(state,fromblock)!=0)
 	{
@@ -1670,15 +1674,15 @@ void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
 // illegal attempted moves at each step
 void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, uint16_t * moveHistory, int nMoves)
 {
-  cout << "Moves: " << endl;
-  printState(state);
+//  cout << "Moves: " << endl;
+//  printState(state);
   for (unsigned i = 0; i < nMoves; i++) {
-    cout << "Failed moves: " << failedMoves[i].size() << endl;
+  //  cout << "Failed moves: " << failedMoves[i].size() << endl;
     uint16_t& move =  moveHistory[i];
     dispMove(move);
     assert(isLegal(move));
     applyMove(state, move);
-    printState(state);
+ //   printState(state);
   }
 }
 
@@ -1719,7 +1723,7 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory,
   }
   int nMoves = 0;
   uint16_t newState[16]; 
-  generateAttemptableMoves(state, whiteMove, levels[depth], nMoves, true);
+  generateAttemptableMoves(state, whiteMove, levels[depth], nMoves, false);
   checkForCheck(state, whiteMove, levels[depth], nMoves);
   assert (nMoves < NMOVES); // 
   if (!hasLegalMove(levels[depth],nMoves)) return depth; // No legal moves from this state
@@ -1727,9 +1731,9 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory,
     int attemptedMoveIndex = rand() % nMoves;
     uint16_t& move = levels[depth][attemptedMoveIndex];
     if (isLegal(move)) {
-      cout << "Selected move: " << decodeMove(state,move) << endl;
+   //   cout << "Selected move: " << decodeMove(state,move) << endl;
       applyMove(state,newState,move);
-      printState(newState);
+   //   printState(newState);
       moveHistory[depth] = move;
       return generateRandomMoves(newState,!whiteMove,moveHistory,failedMoves,levels,depth+1,maxdepth);
     } else {
@@ -1921,6 +1925,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
             if (verbose) printf("knight   src: %d dest: %d\n",src,dest);
 		// TODO: Add a flag if it's a capture
             moves[nMoves++] = encodeMove(src,dest,false,false);
+			assert(moves[nMoves-1]);
           }
         }
       } 
@@ -1946,6 +1951,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
           if (ownPiece(destPiece,whiteMove)) break; 
           if (verbose) printf("rooklike src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
+			assert(moves[nMoves-1]);
 		// TODO: Add a flag if it's a capture
 	  // If the destination is occupied by an opponent's piece, this move is a capture.
 	  // Furthermore, all moves that continue in this direction should be marked as blocked
@@ -1974,6 +1980,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 	  // If the destination is occupied by an opponent's piece, this move is a capture.
 	  // Furthermore, all moves that continue in this direction should be marked as blocked
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
+			assert(moves[nMoves-1]);
           if (opponentPiece(destPiece,whiteMove)) blocked = true; 
           if (isKing(pieceVal)) break; // King can move only one square, so look no further in this dir
         }
@@ -1988,6 +1995,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
         if (!ownPiece(destPiece,whiteMove)) { // I can attempt to move one square forward
           if (verbose) printf("pawnmove src: %d dest: %d blocked: %d\n",src,dest,blocked);
           moves[nMoves++] = encodeMove(src,dest,blocked,false);
+			assert(moves[nMoves-1]);
           // check for possibility of jumping 2
           if ((pieceVal == 6 && (src / 8 ) == 6) || ((src / 8) == 1 && pieceVal == 12)) {
             int dest2 = (pieceVal == 6) ? dest - 8 : dest + 8; // dest space if pawn moves two
@@ -1996,6 +2004,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 	    if (!ownPiece(dest2Piece,whiteMove)) {
               if (verbose) printf("pawn-up2 src: %d dest: %d blocked: %d\n",src,dest2,blocked || blocked2);
               moves[nMoves++] = encodeMove(src,dest2,blocked || blocked2,false);
+			assert(moves[nMoves-1]);
             }
           }
         }
@@ -2005,11 +2014,13 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
       if (dest >= 0 && dest < 64 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
           if (verbose) printf("pawncapt src: %d dest: %d \n",src,dest);
           moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY CODE
+			assert(moves[nMoves-1]);
       }
       dest -= 2;
       if (dest >= 0 && dest < 64 && (diagonalDests[src] & (ONE << dest)) && opponentPiece(getBlockVal(state,dest),whiteMove)) {
           if (verbose) printf("pawncapt src: %d dest: %d \n",src,dest);
           moves[nMoves++] = encodeMove(src,dest,blocked,false) | (1 << 13); // 13 == PAWN TRY CODE
+			assert(moves[nMoves-1]);
       }
     }
   }
@@ -2100,10 +2111,10 @@ class HcCore: public AppCore {
       int childnum = 0;
 	  int parentk = parent->k;
 
-
 	  int depth = parent->k;
 	  
-	  
+	  assert(depth<=maxdepth);
+
 	  uint16_t * possState = parent->board;
 	  int whiteMove = parent->moveWhite;
 
@@ -2118,7 +2129,7 @@ class HcCore: public AppCore {
       if(parentk < sequential_threshold){
 
 			  //Check if it is a solution 
-	if(parentk == MAX_DEPTH )
+	if(parentk == maxdepth )
 	{
 
 	nSolutions++;
@@ -2127,6 +2138,7 @@ class HcCore: public AppCore {
 		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
 #endif
+		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
 		return;
 	}
@@ -2405,13 +2417,14 @@ class HcCore: public AppCore {
 		moveList[i] = &attemptableMoves[i*NMOVES];
         }
 
-        recursive_hc(parent->trueState,parent->board,!parent->moveWhite,parent->possHistory,parent->k+1,moveList);
+        recursive_hc(parent->trueState,parent->board,parent->moveWhite,parent->possHistory,depth,moveList);
       }
     }
 
     void recursive_hc(uint16_t *trueState,uint16_t *possState,bool whiteMove,uint16_t *possHistory,int depth,uint16_t **levels){
 
 
+	  assert(depth<=maxdepth);
 
   // Need to check that the messages match
   if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
@@ -2419,7 +2432,8 @@ class HcCore: public AppCore {
 
   if (depth == maxdepth) { // Then we have found a solution
 	nSolutions++;
-	CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+//	if(nSolutions==0) 
+			CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
@@ -2440,6 +2454,10 @@ class HcCore: public AppCore {
   // Note: since the same application is being done for every call at this depth; we could just compute the
   // new global state at this depth once before the initial call and then just move a pointer around
   uint16_t newTrueState[16]; 
+
+  if(moveHistory[depth]==0) CkPrintf("depth %d \n ",depth);
+  assert(moveHistory[depth]);
+
   applyMove(trueState,newTrueState,moveHistory[depth]);
 
   uint16_t newPossState[16]; 
