@@ -1601,6 +1601,23 @@ bool kingInCheck(uint16_t* state, bool whiteKing)
 
 }
 
+// Returns set of all moves from this position that are pawn tries 
+set<uint16_t> pawnTries(uint16_t* state, bool whiteKing)
+{
+  //cout << "KING IN CHECK" << endl;
+  //printState(state);
+  static uint16_t moves[NMOVES];
+  int nMoves = 0;
+  set<uint16_t> result;
+  generateAttemptableMoves(state, !whiteKing, moves, nMoves);
+  for (int i = 0; i < nMoves; i++) {
+    if (moves[i] & PAWNTRY) {
+      result.insert(moves[i]);
+    }
+  }
+  return result;
+}
+
 bool leavesKingInCheck(uint16_t* state, uint16_t move, bool whiteMove) 
 {
   static uint16_t currentState[16];
@@ -1700,7 +1717,10 @@ int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
 // TODO
 bool samePawnTries(uint16_t* state1, uint16_t* state2, bool whiteMove)
 {
-  return true;
+  //return true;
+  set<uint16_t> state1Tries = pawnTries(state1,whiteMove);
+  set<uint16_t> state2Tries = pawnTries(state2,whiteMove);
+  return state1Tries == state2Tries;
 }
 
 // Returns true if the player whose turn it is in check in both states or
@@ -2019,7 +2039,7 @@ int main(int argc, char* argv[])
 
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,4);
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,10);
 	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
         cout << nExecutedMoves << endl;
