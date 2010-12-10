@@ -2070,12 +2070,18 @@ int main(int argc, char* argv[])
 
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
-	maxdepth = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
 	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
-	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
+	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
-        cout << maxdepth << endl;
-        processMoveHistory(stateCopy,failedMoves,moveHistory,maxdepth);
+        cout << nExecutedMoves << endl;
+        bool whitePerspective = false; // Black perspective by default
+        if (argc >= 2) {
+          int truncationLevel = atoi(argv[1]);
+          assert (truncationLevel <= nExecutedMoves);
+          nExecutedMoves = truncationLevel;
+          if (argc == 3) whitePerspective = true;
+        }
+        processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
 	//return 0;
 
 	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
@@ -2090,7 +2096,12 @@ int main(int argc, char* argv[])
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
         //generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
-		generateInformationSet(state, state, true, possHistory,  moveList, 0);
+	
+	//Osman's function
+	generateInformationSet(state, state, true, possHistory,  moveList, 0);
+    //Mark's new function  
+	//TODO
+	generateInformationSet(whitePerspective, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 	cout << "Solutions founds: " << nSolutions << endl;
 	return 0;
 }
