@@ -12,7 +12,7 @@ CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 all: hc hc.rndm hc.wkstl hc.nbr  
 
 hc: searchEngine.o hc.o
-	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc -memory paranoid
+	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc #-memory paranoid
 
 hc.rndm: searchEngine.o hc.o
 	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc.rndm -balance rand #-memory paranoid
