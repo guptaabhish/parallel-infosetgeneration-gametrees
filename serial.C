@@ -1685,27 +1685,29 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     return 9;
   case 2:  // White checkmates black in 10 moves
     moveHistory[0] = encodeMove(51,35,false,false); // white queen pawn advances two
-    moveHistory[1] = encodeMove(8,24,false,false); // black a pawn advances one
+    moveHistory[1] = encodeMove(8,24,false,false); // black a pawn advances two 
     moveHistory[2] = encodeMove(58,30,false,false); // white develops bishop 
-    //failedMoves[3].insert( encodeMove(12,28,true,false) ); // black king pawn fails to advance two
-    moveHistory[3] = encodeMove(9,17,false,false); //
-    moveHistory[4] = encodeMove(57,42,false,false); //
-    moveHistory[5] = encodeMove(10,26,false,false); //
-    //failedMoves[6].insert( encodeMove(31,13,true,false) ); //
-    moveHistory[6] = encodeMove(35,27,false,false); //
-    //failedMoves[7].insert( encodeMove(15,31,true,false) ); //
-    moveHistory[7] = encodeMove(1,16,false,false); //
-    moveHistory[8] = encodeMove(27,19,false,false); //
-    moveHistory[9] = encodeMove(13,21,false,false); //
-    moveHistory[10] = encodeMove(52,36,false,false); //
-    moveHistory[11] = encodeMove(21,30,false,false,true); //
-    moveHistory[12] = encodeMove(61,34,false,false); //
-    moveHistory[13] = encodeMove(12,19,false,false,true); //
-    moveHistory[14] = encodeMove(59,27,false,false); //
-    moveHistory[15] = encodeMove(3,10,false,false); //
-    moveHistory[16] = encodeMove(27,13,false,false); //
-    moveHistory[17] = encodeMove(4,3,false,false); //
-    moveHistory[18] = encodeMove(13,5,false,false); //
+    moveHistory[3] = encodeMove(9,17,false,false); // black advances b pawn one
+    moveHistory[4] = encodeMove(57,42,false,false); // white knight to c3
+    failedMoves[4].insert( encodeMove(30,3,true,false) ); // blocked attack on black queen
+    moveHistory[5] = encodeMove(10,26,false,false); // black pawn to c5
+    moveHistory[6] = encodeMove(35,27,false,false); // d5
+    failedMoves[6].insert( encodeMove(30,3,true,false) ); // repeat blocked attack on black queen
+    moveHistory[7] = encodeMove(1,16,false,false); // // black knight to a6
+    moveHistory[8] = encodeMove(27,19,false,false); // d6 (white pushing the pawn)
+    moveHistory[9] = encodeMove(13,21,false,false); // f6 black pawn attacks bishop
+    moveHistory[10] = encodeMove(52,36,false,false); // e4
+    moveHistory[11] = encodeMove(21,30,false,false,true); // black pawn takes bishop
+    moveHistory[12] = encodeMove(61,34,false,false); // Bc4 white develops other bishop
+    moveHistory[13] = encodeMove(12,19,false,false,true); // ed pawn capture exposes king
+    moveHistory[14] = encodeMove(59,27,false,false); // Qd5 developing queen
+    moveHistory[15] = encodeMove(3,10,false,false); // Qc7 black's queen moves out
+    moveHistory[16] = encodeMove(27,13,false,false); // white queen attacks king, puts black in check
+    moveHistory[17] = encodeMove(4,3,false,false); // black king finally moves to d8
+    failedMoves[17].insert( encodeMove(14,22,false,true) ); // moving pawn (to attempt block) leaves king in check
+    failedMoves[17].insert( encodeMove(4,13,false,true) ); // capturing queen would leave black king in check (from the bishop) 
+    failedMoves[17].insert( encodeMove(4,12,false,true) ); // this move tests whether the checking piece is a queen or a bishop 
+    moveHistory[18] = encodeMove(13,5,false,false); // Qxf8++ white takes bishop and wins.
     return 19;
   }
 }
