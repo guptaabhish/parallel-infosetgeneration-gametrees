@@ -1,4 +1,4 @@
-OPTS = -g -O0 -DOPTIMIZE -DUSE_CMIPOOL -DFIRST_SOLUTION -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
+OPTS = -O2 -DOPTIMIZE -DUSE_CMIPOOL -DFIRST_SOLUTION -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
 
 # Fill in the path to CHARMC here
 CHARMC_PATH=~/charmgit/charm/bin
@@ -12,7 +12,7 @@ CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 all: hc hc.rndm hc.wkstl hc.nbr  
 
 hc: searchEngine.o hc.o
-	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc -memory paranoid
+	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc -tracemode projections #-memory paranoid
 
 hc.rndm: searchEngine.o hc.o
 	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc.rndm -balance rand #-memory paranoid

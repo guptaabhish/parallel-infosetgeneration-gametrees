@@ -11,8 +11,9 @@
 #include <vector>
 #include <string.h> // memcpy
 using namespace std;
-
+bool whitePerspective=false;
 int nSolutions;
+long long numStates=0;
 //#define PRINT_SOLUTIONS 
 
 // Use sets of moves to keep track of the list of all illegal moves that were tried before
@@ -50,7 +51,9 @@ const int STATESIZE = 16;
 const int BLOCKED = ONE << 15;
 const int CHECKED = ONE << 14;
 const int PAWNTRY = ONE << 13;
-
+uint16_t moveHistory[MAXDEPTH];
+VecSetMove failedMoves(MAXDEPTH);
+int maxdepth;
 // Currently, the start state is copied here and it is referenced during infoset generation to translate the
 // sequence of moves into a sequence of states (by copying this state to another location and then repeatedly
 // applying moves to it)
@@ -1805,9 +1808,13 @@ bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 	// Arg 6 & Arg 8: working space for tracking possible sequences of moves and the alternatives at each level
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
-void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
-  uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** levels, int depth, int maxdepth)
+//void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
+//  uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** levels, int depth, int maxdepth)
+void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* possState, bool whiteMove, /*uint16_t* moveHistory, */
+				uint16_t* possHistory, /*VecSetMove& failedMoves,*/ uint16_t** levels, int depth/*, int maxdepth*/)
 {
+//numStates++;
+//if(numStates%1000==0) printf("%d\n",numStates);
   // Need to check that the messages match
   if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
   if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
@@ -1867,8 +1874,8 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
     // Otherwise, recurse 
     applyMove(possState,newPossState,actualMove);
     possHistory[depth] = actualMove;
-    generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
-      moveHistory, possHistory, failedMoves, levels, depth+1, maxdepth);
+    generateInformationSet(newTrueState, newPossState, !whiteMove, 
+      possHistory, levels, depth+1);
   } else { 
     // We are at a level in the search tree where we are considering the possible moves for the opponent.
     // We assume that we know the number of attempted illegal moves (because we would have heard the moderator
@@ -1889,8 +1896,8 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
       if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
         applyMove(possState,newPossState,move);
         possHistory[depth] = move;
-        generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove, 
-          moveHistory, possHistory, failedMoves, levels, depth+1, maxdepth);
+        generateInformationSet(newTrueState, newPossState, !whiteMove, 
+          possHistory, levels, depth+1);
       }
     }
   }
@@ -2043,11 +2050,11 @@ int main(int argc, char* argv[])
         // that would have been received from ONE of the players if this WERE the actual sequence of moves
         // to generate the information set -- the set of ALL sequences of moves (including this one) for which
         // the observations would be the same
-        uint16_t moveHistory[MAXDEPTH];
+//        uint16_t moveHistory[MAXDEPTH];
 
 	// Keep track of the list of failed moves at each step.  failedMoves[i] gives the set of moves that were
 	// attempted but not accepted before the corresponding legal move in moveHistory[i] was issued.
-        VecSetMove failedMoves(MAXDEPTH);
+//        VecSetMove failedMoves(MAXDEPTH);
 
         // Use this to keep track of POSSIBLE sequences of moves that match the (implied) observations from moveHistory
         // If we ever make it to the deepest level without generating a conflict, then we have found a solution in the 
@@ -2090,7 +2097,13 @@ int main(int argc, char* argv[])
 	// Arg 6 & Arg 8: working space for tracking possible sequences of moves and the alternatives at each level
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
-        generateInformationSet(whitePerspective, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+        //generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+	
+	//Osman's function
+	generateInformationSet(state, state, true, possHistory,  moveList, 0);
+    //Mark's new function  
+	//TODO
+	generateInformationSet(whitePerspective, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 	cout << "Solutions founds: " << nSolutions << endl;
 	return 0;
 }
