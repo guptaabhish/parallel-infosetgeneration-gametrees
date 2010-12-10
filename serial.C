@@ -2063,10 +2063,17 @@ int main(int argc, char* argv[])
 
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
-	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
+	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
+	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
         cout << nExecutedMoves << endl;
+        bool whitePerspective = false; // Black perspective by default
+        if (argc >= 2) {
+          int truncationLevel = atoi(argv[1]);
+          assert (truncationLevel <= nExecutedMoves);
+          nExecutedMoves = truncationLevel;
+          if (argc == 3) whitePerspective = true;
+        }
         processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
 	//return 0;
 
@@ -2081,7 +2088,7 @@ int main(int argc, char* argv[])
 	// Arg 6 & Arg 8: working space for tracking possible sequences of moves and the alternatives at each level
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
-        generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+        generateInformationSet(whitePerspective, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 	cout << "Solutions founds: " << nSolutions << endl;
 	return 0;
 }
