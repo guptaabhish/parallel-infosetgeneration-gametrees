@@ -35,6 +35,7 @@ module searchEngine
 		entry [threaded] void allSearchNodeDone(DUMMYMSG *msg);
 		
 		entry void start();
+		entry void incState();
 		entry void groupInitComplete();
 		entry void resetFactory();
         entry [expedited] void foundSolution();

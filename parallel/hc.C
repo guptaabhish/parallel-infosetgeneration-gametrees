@@ -63,17 +63,17 @@ const long long ONE = 1;
 
 // Number of slots allocated to generate all legal moves from a given position
 // I have no idea whether this is an appropriate number or not.
-const int NMOVES = 1000; 
+#define NMOVES  1000 
 
 // Maximum number of legal moves in a sequence of moves from the start state.
 // This can be changed and will affect the amount of memory allocated up front and the spatial locality
 // of the program
 
 ///////////// This should be 100.. it is hardcoded in ci file
-const int MAXDEPTH = 100;
+#define MAXDEPTH 100
 
 // Number of uint16_t data in a state.  This cannot be changed without redoing everything.
-const int STATESIZE = 16;
+#define STATESIZE 16
 
 // Specify the locations of th bit flags in the structures that encode a move
 // A move is a 16-bit entity.  Bits 0-5 are the destination of the move (square 0-63); bits 6-11 are the src
@@ -1813,6 +1813,7 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 
   if (depth == maxdepth) { // Then we have found a solution
 	nSolutions++;
+	searchEngineProxy.incState();
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
 	uint16_t destructibleState[16];
@@ -2133,12 +2134,14 @@ class HcCore: public AppCore {
 	{
 
 	nSolutions++;
+	searchEngineProxy.incState();
 #ifdef DEBUG
 		CkPrintf("Goal reached \n"); 
-		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+//		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
 #endif
-		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+//		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+
 
 		return;
 	}
@@ -2288,124 +2291,6 @@ class HcCore: public AppCore {
 
 	
 	
-	////////////////////////////////////////////////////////////////////////////
-/*	uint16_t allowMoves=0;
-	if(moveWhite)	
-	{
-
-			int i;
-		for(i=0;i<64;i++)
-		{
-		//	CkPrintf("Bef i %d\n",i);
-			int newStates=0;
-			// If it is a white piece then try moving it
-			int val=getBlockVal(state,i);
-//			if(val<7 && val>0)
-			{
-#ifdef DEBUG
-				if(i==49) CkPrintf("A white piece at %d\n",val);
-#endif
-				uint16_t **newstates;
-				newstates =NULL;
-        			if(val==1) newStates=moveRook(state,moveWhite,i,&newstates,false);
-			        else if(val==2) newStates=moveKnight(state,moveWhite,i,&newstates);
-			        else if(val==3) newStates=moveBishop(state,moveWhite,i,&newstates,false);
-			        else if(val==4) newStates=moveKing(state,moveWhite,i,&newstates);
-			        else if(val==5) newStates=moveQueen(state,moveWhite,i,&newstates);
-			        else if(val==6) newStates=movePawn(state,moveWhite,i,&newstates);				
-				allowMoves+=newStates;
-
-#ifdef DEBUG
-				if(i==54 && newStates>0)
-				{
-//					printf("DDDDDDDDDDDDDDDDDDDDd newStates=%d\n",newStates);
-					for(int i=0;i<newStates;i++)
-	                        	       printState(newstates[i]);
-				}
-#endif
-
-// Push the new states onto queue 
-				int j;
-				for(j =0; j <newStates; j++) 
-				{
-				HcState *child = (HcState *)qs->registerState(sizeof(HcState), childnum, MAX_CHILDREN);
-			//	HcState *child = (HcState *)qs->registerState(sizeof(HcState));
-				child->k = parentk+1;
-				child->moveWhite = false;
-				copy(&newstates[j][0], &newstates[j][16], child->board);
-				qs->push(child);
-				childnum++;
-				//Free newStates
-				delete [] newstates[j];
-						
-				}
-
-				if(newStates !=0) 
-					delete [] newstates;
-// Pushed the new states onto queue 
-
-			}
-		}
-#ifdef DEBUG
-		CkPrintf("White has %d allowed moves\n",allowMoves);
-#endif
-	}
-        else
-        {
-				int i;
-                for(i=0;i<64;i++)
-                {
-                        int newStates=0;
-                        // If it is a white piece then try moving it
-                        int val=getBlockVal(state,i);
-//                      if(val<7 && val>0)
-                        {
-#ifdef DEBUG
-                                if(i==8) printf("A white piece at %d\n",val);
-#endif
-                                uint16_t **newstates;
-                                if(val==7) newStates=moveRook(state,moveWhite,i,&newstates,false);
-                                else if(val==8) newStates=moveKnight(state,moveWhite,i,&newstates);
-                                else if(val==9) newStates=moveBishop(state,moveWhite,i,&newstates,false);
-                                else if(val==10) newStates=moveKing(state,moveWhite,i,&newstates);
-                                else if(val==11) newStates=moveQueen(state,moveWhite,i,&newstates);
-                                else if(val==12) newStates=movePawn(state,moveWhite,i,&newstates);
-                                allowMoves+=newStates;
-#ifdef DEBUG
-                                if(i==47 && newStates>0)
-                                {
-//                                        printf("DDDDDDDDDDDDDDDDDDDDd i=%d newStates=%d\n",i,newStates);
-                                      for(int i=0;i<newStates;i++)
-                                              printState(newstates[i]);
-                                }
-#endif
-				int j;
-				for(j =0; j <newStates; j++) 
-				{
-				HcState *child = (HcState *)qs->registerState(sizeof(HcState), childnum, MAX_CHILDREN);
-			//	HcState *child = (HcState *)qs->registerState(sizeof(HcState));
-				child->k = parentk+1;
-				child->moveWhite = true;
-				copy(&newstates[j][0], &newstates[j][16], child->board);
-				qs->push(child);
-				childnum++;
-				//Free newStates
-				delete [] newstates[j];
-						
-				}
-
-				if(newStates !=0)
-				delete [] newstates;
-                        }
-                }
-#ifdef DEBUG
-                CkPrintf("Black has %d allowed moves\n",allowMoves);
-#endif
-        }
-
-	//							foundSolution();
-	  }
-	*/
 	 else{
 			 	uint16_t attemptableMoves[NMOVES*MAXDEPTH];
 
@@ -2432,8 +2317,9 @@ class HcCore: public AppCore {
 
   if (depth == maxdepth) { // Then we have found a solution
 	nSolutions++;
+	searchEngineProxy.incState();
 //	if(nSolutions==0) 
-			CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
+	//		CkPrintf("[%d] nSolutions %d \n",CkMyPe(),nSolutions);
 
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
@@ -2494,8 +2380,7 @@ class HcCore: public AppCore {
     // Otherwise, recurse 
     applyMove(possState,newPossState,actualMove);
     possHistory[depth] = actualMove;
-    recursive_hc(newTrueState, newPossState, !whiteMove, 
-      possHistory, depth+1,levels);
+    recursive_hc(newTrueState, newPossState, !whiteMove, possHistory, depth+1,levels);
   } else { 
     // We are at a level in the search tree where we are considering the possible moves for the opponent.
     // We assume that we know the number of attempted illegal moves (because we would have heard the moderator
@@ -2516,8 +2401,7 @@ class HcCore: public AppCore {
       if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
         applyMove(possState,newPossState,move);
         possHistory[depth] = move;
-        recursive_hc(newTrueState, newPossState, !whiteMove, 
-          possHistory, depth+1,levels);
+      recursive_hc(newTrueState, newPossState, !whiteMove, possHistory, depth+1,levels);
       }
     }
 

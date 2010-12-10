@@ -71,7 +71,7 @@ class SearchConductor : public CBase_SearchConductor
 {
 public:	
 	double startTime;
-	
+	long long numStates;
 	int currentSearchDepth, mySearchLimit;
 	int groupInitCount;
 	int solutionFound;
@@ -85,6 +85,7 @@ public:
 	SearchConductor( CkArgMsg *m );
 	
 	void allSearchNodeDone( DUMMYMSG *msg );
+	void incState() {numStates++;}
     void start();
 	void groupInitComplete();
 	void resetFactory();

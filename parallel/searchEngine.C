@@ -60,7 +60,7 @@ CProxy_SearchGroup groupProxy;
 SearchConductor::SearchConductor( CkArgMsg *m )
 {
 	searchEngineProxy = thisProxy;
-	
+numStates=0;	
         if(m->argc < 2){
           CkAbort("usage: program <sequential_threshold> [pgm args...]\n");
         }
@@ -167,6 +167,7 @@ void SearchConductor::allSearchNodeDone( DUMMYMSG *msg ){
           if( currentSearchDepth < 0 ){
             //|| currentSearchDepth > engineCore->searchDepthLimit() ){
     CkPrintf( "Allsearchnodedone:  solution is found in %lf sec, with %d processors\n",  CkWallTimer()-startTime, CkNumPes() );	
+			CkPrintf("my sols=%d\n",numStates);
             CkExit();
             return;
           }

@@ -2019,7 +2019,7 @@ int main(int argc, char* argv[])
 
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,4);
+	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
 	//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
         cout << nExecutedMoves << endl;
