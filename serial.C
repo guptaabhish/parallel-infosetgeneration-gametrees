@@ -2076,7 +2076,7 @@ int main(int argc, char* argv[])
 	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
         cout << nExecutedMoves << endl;
-        bool whitePerspective = false; // Black perspective by default
+        //bool whitePerspective = false; // Black perspective by default
         if (argc >= 2) {
           int truncationLevel = atoi(argv[1]);
           assert (truncationLevel <= nExecutedMoves);
@@ -2100,10 +2100,11 @@ int main(int argc, char* argv[])
         //generateInformationSet(false, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 	
 	//Osman's function
+        maxdepth = nExecutedMoves;
 	generateInformationSet(state, state, true, possHistory,  moveList, 0);
     //Mark's new function  
 	//TODO
-	generateInformationSet(whitePerspective, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
+	//generateInformationSet(whitePerspective, state, state, true, moveHistory, possHistory, failedMoves, moveList, 0, nExecutedMoves);
 	cout << "Solutions founds: " << nSolutions << endl;
 	return 0;
 }
