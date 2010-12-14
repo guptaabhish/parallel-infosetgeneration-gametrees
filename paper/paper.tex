@@ -296,11 +296,165 @@ observations for a sequence of moves, an information set is the set of all possi
 players}, that are consistent with those observations.  Figure~\ref{abbrevoutput} shows the information set for black
 after both player's have made five moves.  From this list of possibilities, black can infer that white must have a
 bishop at g5 and a pawn at d6.  There are 25 possible sequences of moves that are consistent with black's observations
-up to that point. Tables~\ref{whitetimes} and ~\ref{blacktimes} show the size of the information sets for each player
-for each move in the game and the amount of time to find the full set on a single processor.  Figure~\ref{verboseoutput}
-shows the full output of the program for the same point in the game (five moves for each player) and illustrates all of
-the possible positions in the belief state.
+up to that point. Table~\ref{bothtimes} shows the size of the information sets for each player for each move in the game
+and the amount of time to find the full set on a single processor.  Appendix B shows the full output of the program for
+the same point in the game (five moves for each player) and illustrates all of the possible positions in the belief
+state.
+
+\begin{figure}
+\begin{mytinylisting}
+1. Pa2:a4 Pa7:a5 2. Pd2:d4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d3 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pd3:d4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Pa2:a4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:f4 Pb7:b6 3. Bf4:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pb2:b3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pc2:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:c1 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ke1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+\end{mytinylisting}
+\caption{Abbreviated output from example game.  Generating information sets for black after five turns by each player.
+From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
+\label{abbrevoutput}
+\end{figure}
+
+\begin{table}
+\centering
+\begin{tabular}{rrrrr}
+ & \multicolumn{2}{c}{\bf White} & \multicolumn{2}{c}{\bf Black} \\
+{\bf Ply} & {\bf Size} & {\bf Time} & {\bf Size} & {\bf Time} \\
+1 & 18 & 0.000 & 20 & .000 \\
+2 & 18 & 0.000 & 19 & .000 \\
+3 & 18 & 0.000 & 404 & .008\\
+4 & 279 & 0.008 & 401 & .024\\
+5 & 242 & 0.028 & 1472 & .044\\
+6 & 216 & 0.052 & 155 & .096\\
+7 & 176 & 0.064 & 293 & .116\\
+8 & 3406 & 0.092 & 158 & .128\\
+9 & 2191 & 0.288 & 118 & .148\\
+10 & 1423 & 0.508 & 25 & .152\\
+11 & 1363 & 0.596 & 798 & .164\\
+12 & 1416 & 0.744 & 518 & .192\\
+13 & 1416 & 0.836 & 13564 & .304\\
+14 & 3440 & 0.97 & 12394 & .776\\
+15 & 3428 & 1.25 & 343652 & 3.75\\
+16 & 50521 & 1.82 & 320704 & 17.3\\
+17 & 43192 & 5.91 & 490162 & 99.9\\
+18 & 26128 & 7.94 & 3792 & 119\\
+19 & 19061 & 9.92 & 14836 & 121\\
+\end{tabular}
+\caption{Solution counts and running times for a sample kriegspiel game}
+\label{bothtimes}
+\end{table}
+
+%Table~\ref{sampletimes}
+%\begin{table}
+%\begin{tabular}{ccc}
+%1 & 20 & .000\\
+%2 & 19 & .000\\
+%3 & 404 & .008\\
+%4 & 401 & .024\\
+%5 & 1472 & .044\\
+%6 & 155 & .096\\
+%7 & 293 & .116\\
+%8 & 158 & .128\\
+%9 & 118 & .148\\
+%10 & 25 & .152\\
+%11 & 798 & .164\\
+%12 & 518 & .192\\
+%13 & 13564 & .304\\
+%14 & 12394 & .776\\
+%15 & 343652 & 3.75\\
+%16 & 320704 & 17.3\\
+%17 & 490162 & 99.9\\
+%18 & 3792 & 119\\
+%19 & 14836 & 121 \\
+%\end{tabular}
+%\caption{Solution counts and running times for a sample kriegspiel game}
+%\label{blacktimes}
+%\end{table}
+
    
+\section{The Information Set Generation Algorithm}
+\begin{figure}
+%\begin{listing}
+\begin{lstlisting}
+void generateInformationSet(uint16_t* trueState, uint16_t* possState, bool whiteMove, 
+	uint16_t* possHistory, uint16_t** levels, int depth)
+{
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  
+  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
+  if (depth == maxdepth) { // Then we have found a solution
+	nSolutions++; return; // Report solution
+  }
+  uint16_t newPossState[16]; 
+  int nMoves = 0;
+  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
+  checkForCheck(possState, whiteMove, levels[depth], nMoves); // prunes if not equal
+  assert (nMoves < NMOVES); // 
+
+  if (whitePerspective == whiteMove) { // move from perspective plyaer 
+    SetMove& failures = failedMoves[depth];
+    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
+      uint16_t move = *itr ;
+      if (!foundMatchingMove(move,levels[depth],nMoves)) {
+        return; // Prune: one of my own failed moves is not attemptable in this state
+      }
+    }
+    // We know exactly what the actual move was; make it
+    uint16_t& actualMove = moveHistory[depth];
+    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
+      return; // Prune (because the move that we know we made at this depth is not legal)
+    }
+    // Otherwise, recurse 
+    applyMove(possState,newPossState,actualMove);
+    possHistory[depth] = actualMove;
+    generateInformationSet(newTrueState, newPossState, !whiteMove, 
+      possHistory, levels, depth+1);
+  } else { 
+    // We are at a level in the search tree where 
+    // we are considering the possible moves for the opponent.
+    // We know the number of attempted illegal moves, but not which ones
+
+    // Must be enough attemptable moves in the state to match the number of failed attempts
+    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
+    if (nIllegalMoves < failedMoves[depth].size()) {
+	return; // Prune if not enough attemptable moves
+    }
+    // Now we want to try each possible move that is legally executable (not just attemptable) 
+    for (int i = 0; i < nMoves; i++) {
+      uint16_t& move = levels[depth][i];
+      if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
+        applyMove(possState,newPossState,move);
+        possHistory[depth] = move;
+        generateInformationSet(newTrueState, newPossState, !whiteMove, 
+          possHistory, levels, depth+1);
+      }
+    }
+  }
+}
+\end{lstlisting}
+\caption{The heart of the information set generation algorithm.}
+\label{codelisting}
+\end{figure}
+
+Figure~\ref{codelisting}
 
 \section{Performance Results}
 
@@ -500,7 +654,7 @@ only at the squares along its rank, file, diagonals, and knight-edges for threat
 allocation issues that could be improved. 
 
 
-\section{Appendix}
+\section{Appendix A}
 Figure~\ref{fulltree} shows the full game tree for a simple variant of poker known as Kuhn poker.  There are three
 cards: a king, a queen, and a jack.  The dealer deals one card to each of two players.  Each player antes one unit, and
 there is one simple round of betting, in which the size of the pot may be doubled.  Left branches denote check/fold;
@@ -613,256 +767,26 @@ lines.
 \label{fulltree}
 \end{figure}
 
-Table~\ref{sampletimes}
-\begin{table}
-\begin{tabular}{ccc}
-1 & 18 & 0.000\\
-2 & 18 & 0.000\\
-3 & 18 & 0.000\\
-4 & 279 & 0.008\\
-5 & 242 & 0.028\\
-6 & 216 & 0.052\\
-7 & 176 & 0.064\\
-8 & 3406 & 0.092\\
-9 & 2191 & 0.288\\
-10 & 1423 & 0.508\\
-11 & 1363 & 0.596\\
-12 & 1416 & 0.744\\
-13 & 1416 & 0.836\\
-14 & 3440 & 0.97\\
-15 & 3428 & 1.25\\
-16 & 50521 & 1.82\\
-17 & 43192 & 5.91\\
-18 & 26128 & 7.94\\
-19 & 19061 & 9.92\\
-\end{tabular}
-\caption{Solution counts and running times for a sample kriegspiel game}
-\label{whitetimes}
-\end{table}
-
-Table~\ref{sampletimes}
-\begin{table}
-\begin{tabular}{ccc}
-1 & 20 & .000\\
-2 & 19 & .000\\
-3 & 404 & .008\\
-4 & 401 & .024\\
-5 & 1472 & .044\\
-6 & 155 & .096\\
-7 & 293 & .116\\
-8 & 158 & .128\\
-9 & 118 & .148\\
-10 & 25 & .152\\
-11 & 798 & .164\\
-12 & 518 & .192\\
-13 & 13564 & .304\\
-14 & 12394 & .776\\
-15 & 343652 & 3.75\\
-16 & 320704 & 17.3\\
-17 & 490162 & 99.9\\
-18 & 3792 & 119\\
-19 & 14836 & 121 \\
-\end{tabular}
-\caption{Solution counts and running times for a sample kriegspiel game}
-\label{blacktimes}
-\end{table}
-
 
 
 
 %\nocite{*}
-\nocite{richards09information}
-\nocite{russell05efficient}
-\nocite{kuhn03lectures}
-\nocite{kuhn97classics}
-\nocite{parker05sampling}
-\nocite{nance06reasoning}
-\nocite{li94chess}
+%\nocite{richards09information}
+%\nocite{russell05efficient}
+%\nocite{kuhn03lectures}
+%\nocite{kuhn97classics}
+%\nocite{parker05sampling}
+%\nocite{nance06reasoning}
+%\nocite{li94chess}
 
-\bibliographystyle{acm}
-\bibliography{paper}
 %\begin{thebibliography}{99}
 %\end{thebibliography}
 
-\begin{figure}
-\begin{mytinylisting}
-1. Pa2:a4 Pa7:a5 2. Pd2:d4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d3 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pd3:d4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Pa2:a4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:f4 Pb7:b6 3. Bf4:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pb2:b3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pc2:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:c1 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ke1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
-\end{mytinylisting}
-\caption{Abbreviated output from example game.  Generating information sets for black after five turns by each player.
-From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
-\label{abbrevoutput}
-\end{figure}
 
 %\begin{figure}
+
+\section{Appendix B}
 \begin{verbatim}
-19
-Moves: 
-
-**********************************************
-R N B Q K B N R 
-P P P P P P P P 
-- - - - - - - - 
-- - - - - - - - 
-- - - - - - - - 
-- - - - - - - - 
-p p p p p p p p 
-r n b q k b n r 
-**********************************************
-Failed moves: 0
-from: 51 to: 35 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-P P P P P P P P 
-- - - - - - - - 
-- - - - - - - - 
-- - - p - - - - 
-- - - - - - - - 
-p p p - p p p p 
-r n b q k b n r 
-**********************************************
-Failed moves: 0
-from: 8 to: 24 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-- P P P P P P P 
-- - - - - - - - 
-P - - - - - - - 
-- - - p - - - - 
-- - - - - - - - 
-p p p - p p p p 
-r n b q k b n r 
-**********************************************
-Failed moves: 0
-from: 58 to: 30 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-- P P P P P P P 
-- - - - - - - - 
-P - - - - - b - 
-- - - p - - - - 
-- - - - - - - - 
-p p p - p p p p 
-r n - q k b n r 
-**********************************************
-Failed moves: 0
-from: 9 to: 17 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-- - P P P P P P 
-- P - - - - - - 
-P - - - - - b - 
-- - - p - - - - 
-- - - - - - - - 
-p p p - p p p p 
-r n - q k b n r 
-**********************************************
-Failed moves: 1
-from: 57 to: 42 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-- - P P P P P P 
-- P - - - - - - 
-P - - - - - b - 
-- - - p - - - - 
-- - n - - - - - 
-p p p - p p p p 
-r - - q k b n r 
-**********************************************
-Failed moves: 0
-from: 10 to: 26 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-- - - P P P P P 
-- P - - - - - - 
-P - P - - - b - 
-- - - p - - - - 
-- - n - - - - - 
-p p p - p p p p 
-r - - q k b n r 
-**********************************************
-Failed moves: 1
-from: 35 to: 27 blocked: 0 checked: 0
-
-**********************************************
-R N B Q K B N R 
-- - - P P P P P 
-- P - - - - - - 
-P - P p - - b - 
-- - - - - - - - 
-- - n - - - - - 
-p p p - p p p p 
-r - - q k b n r 
-**********************************************
-Failed moves: 0
-from: 1 to: 16 blocked: 0 checked: 0
-
-**********************************************
-R - B Q K B N R 
-- - - P P P P P 
-N P - - - - - - 
-P - P p - - b - 
-- - - - - - - - 
-- - n - - - - - 
-p p p - p p p p 
-r - - q k b n r 
-**********************************************
-Failed moves: 0
-from: 27 to: 19 blocked: 0 checked: 0
-
-**********************************************
-R - B Q K B N R 
-- - - P P P P P 
-N P - p - - - - 
-P - P - - - b - 
-- - - - - - - - 
-- - n - - - - - 
-p p p - p p p p 
-r - - q k b n r 
-**********************************************
-Failed moves: 0
-from: 13 to: 21 blocked: 0 checked: 0
-
-**********************************************
-R - B Q K B N R 
-- - - P P - P P 
-N P - p - P - - 
-P - P - - - b - 
-- - - - - - - - 
-- - n - - - - - 
-p p p - p p p p 
-r - - q k b n r 
-**********************************************
-BEGINNING INFORMATION SET GENERATION
 1. Pa2:a4 Pa7:a5 2. Pd2:d4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
 
 **********************************************
@@ -1170,68 +1094,7 @@ Solutions founds: 25
 %\label{verboseoutput}
 %\end{figure}
 
+\bibliographystyle{acm}
+\bibliography{paper}
 
-\begin{figure}
-%\begin{listing}
-\begin{lstlisting}
-void generateInformationSet(uint16_t* trueState, uint16_t* possState, bool whiteMove, 
-	uint16_t* possHistory, uint16_t** levels, int depth)
-{
-  if (!samePawnTries(trueState, possState, whiteMove)) return;  
-  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
-  if (depth == maxdepth) { // Then we have found a solution
-	nSolutions++; return; // Report solution
-  }
-  uint16_t newPossState[16]; 
-  int nMoves = 0;
-  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
-  checkForCheck(possState, whiteMove, levels[depth], nMoves); // prunes if not equal
-  assert (nMoves < NMOVES); // 
-
-  if (whitePerspective == whiteMove) { // move from perspective plyaer 
-    SetMove& failures = failedMoves[depth];
-    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
-      uint16_t move = *itr ;
-      if (!foundMatchingMove(move,levels[depth],nMoves)) {
-        return; // Prune: one of my own failed moves is not attemptable in this state
-      }
-    }
-    // We know exactly what the actual move was; make it
-    uint16_t& actualMove = moveHistory[depth];
-    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
-      return; // Prune (because the move that we know we made at this depth is not legal)
-    }
-    // Otherwise, recurse 
-    applyMove(possState,newPossState,actualMove);
-    possHistory[depth] = actualMove;
-    generateInformationSet(newTrueState, newPossState, !whiteMove, 
-      possHistory, levels, depth+1);
-  } else { 
-    // We are at a level in the search tree where 
-    // we are considering the possible moves for the opponent.
-    // We know the number of attempted illegal moves, but not which ones
-
-    // Must be enough attemptable moves in the state to match the number of failed attempts
-    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
-    if (nIllegalMoves < failedMoves[depth].size()) {
-	return; // Prune if not enough attemptable moves
-    }
-    // Now we want to try each possible move that is legally executable (not just attemptable) 
-    for (int i = 0; i < nMoves; i++) {
-      uint16_t& move = levels[depth][i];
-      if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
-        applyMove(possState,newPossState,move);
-        possHistory[depth] = move;
-        generateInformationSet(newTrueState, newPossState, !whiteMove, 
-          possHistory, levels, depth+1);
-      }
-    }
-  }
-}
-\end{lstlisting}
-\caption{The heart of the information set generation algorithm.}
-\label{codelisting}
-\end{figure}
-
-Figure~\ref{codelisting}
 \end{document}
