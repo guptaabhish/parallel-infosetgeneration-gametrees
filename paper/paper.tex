@@ -4,11 +4,14 @@
 \usepackage{url,hyperref}
 \usepackage{subfig}
 \usepackage{tikz}
+\usepackage{examplep}
+\usepackage{moreverb}
+\usepackage{listings}
+\lstset{language=C,numbers=left,basicstyle=\footnotesize,numberstyle=\footnotesize}
 \usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,fit,shapes.geometric}
 \usepgflibrary{shapes.geometric}
 %\usepackage{ijcai09}
 
-\pagestyle{empty}
 
 \setlength{\oddsidemargin}{0in}
 \setlength{\topmargin}{0in}
@@ -28,6 +31,13 @@
 \newtheorem{conjecture}{Conjecture}
 
 
+\newenvironment{mylisting}
+{\begin{list}{}{\setlength{\leftmargin}{1em}}\item\scriptsize}
+{\end{list}}
+
+\newenvironment{mytinylisting}
+{\begin{list}{}{\setlength{\leftmargin}{1em}}\item\scriptsize\texttt}
+{\end{list}}
 \newenvironment{proof}{\vspace{-0.15in}\noindent{\bf Proof:}}%
         {\hspace*{\fill}$\Box$\par}
 \newenvironment{proofsketch}{\noindent{\bf Proof Sketch.}}%
@@ -330,13 +340,14 @@ Figure~\ref{3schemes}
  
 Figure~\ref{3depths}
 \begin{figure}
+\begin{minipage}{0.5\linewidth}
 \centering
-%\begin{minipage}{.4\textwidth}
-\includegraphics[width=0.7\textwidth]{plots/3depths.pdf}
-%\end{minipage}
-%\begin{minipage}{.4\textwidth}
-\includegraphics[width=0.7\textwidth]{plots/3depths_nolog.pdf}
-%\end{minipage}
+\includegraphics[width=\textwidth]{plots/3depths.pdf}
+\end{minipage}
+\begin{minipage}{0.5\linewidth}
+\centering
+\includegraphics[width=\textwidth]{plots/3depthsnolog.pdf}
+\end{minipage}
 \caption{3depths}
 \label{3depths}
 \end{figure}
@@ -674,39 +685,39 @@ Table~\ref{sampletimes}
 %\end{thebibliography}
 
 \begin{figure}
-\begin{verbatim}
-1. Pa2:a4 Pa7:a5 2. Pd2:d4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d3 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pd3:d4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Pa2:a4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:f4 Pb7:b6 3. Bf4:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pb2:b3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pc2:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:c1 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ke1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 
-\end{verbatim}
+\begin{mytinylisting}
+1. Pa2:a4 Pa7:a5 2. Pd2:d4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d3 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pd3:d4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Pa2:a4 Pb7:b6 3. Bc1:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:f4 Pb7:b6 3. Bf4:g5 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pa2:a4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pb2:b3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pc2:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pe2:e4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pf2:f4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Pg2:g4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ph2:h4 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:a3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:c3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Nb1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:d3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Qd1:c1 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ke1:d2 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
+\end{mytinylisting}
 \caption{Abbreviated output from example game.  Generating information sets for black after five turns by each player.
 From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
 \label{abbrevoutput}
 \end{figure}
 
-\begin{figure}
+%\begin{figure}
 \begin{verbatim}
 19
 Moves: 
@@ -1154,8 +1165,73 @@ r n - q k b - r
 **********************************************
 Solutions founds: 25
 \end{verbatim}
-\caption{Verbose output from example game.  Generating information sets for black after five turns by each player.
-From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
-\label{verboseoutput}
+%\caption{Verbose output from example game.  Generating information sets for black after five turns by each player.
+%From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
+%\label{verboseoutput}
+%\end{figure}
+
+
+\begin{figure}
+%\begin{listing}
+\begin{lstlisting}
+void generateInformationSet(uint16_t* trueState, uint16_t* possState, bool whiteMove, 
+	uint16_t* possHistory, uint16_t** levels, int depth)
+{
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  
+  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
+  if (depth == maxdepth) { // Then we have found a solution
+	nSolutions++; return; // Report solution
+  }
+  uint16_t newPossState[16]; 
+  int nMoves = 0;
+  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
+  checkForCheck(possState, whiteMove, levels[depth], nMoves); // prunes if not equal
+  assert (nMoves < NMOVES); // 
+
+  if (whitePerspective == whiteMove) { // move from perspective plyaer 
+    SetMove& failures = failedMoves[depth];
+    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
+      uint16_t move = *itr ;
+      if (!foundMatchingMove(move,levels[depth],nMoves)) {
+        return; // Prune: one of my own failed moves is not attemptable in this state
+      }
+    }
+    // We know exactly what the actual move was; make it
+    uint16_t& actualMove = moveHistory[depth];
+    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
+      return; // Prune (because the move that we know we made at this depth is not legal)
+    }
+    // Otherwise, recurse 
+    applyMove(possState,newPossState,actualMove);
+    possHistory[depth] = actualMove;
+    generateInformationSet(newTrueState, newPossState, !whiteMove, 
+      possHistory, levels, depth+1);
+  } else { 
+    // We are at a level in the search tree where 
+    // we are considering the possible moves for the opponent.
+    // We know the number of attempted illegal moves, but not which ones
+
+    // Must be enough attemptable moves in the state to match the number of failed attempts
+    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
+    if (nIllegalMoves < failedMoves[depth].size()) {
+	return; // Prune if not enough attemptable moves
+    }
+    // Now we want to try each possible move that is legally executable (not just attemptable) 
+    for (int i = 0; i < nMoves; i++) {
+      uint16_t& move = levels[depth][i];
+      if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
+        applyMove(possState,newPossState,move);
+        possHistory[depth] = move;
+        generateInformationSet(newTrueState, newPossState, !whiteMove, 
+          possHistory, levels, depth+1);
+      }
+    }
+  }
+}
+\end{lstlisting}
+\caption{The heart of the information set generation algorithm.}
+\label{codelisting}
 \end{figure}
+
+Figure~\ref{codelisting}
 \end{document}
