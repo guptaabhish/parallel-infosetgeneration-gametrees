@@ -392,6 +392,52 @@ From this, black can infer that there is definitely a white bishop at g5 and a w
 
    
 \section{The Information Set Generation Algorithm}
+We have formulated information set generation as a combinatorial search problem.  The input to the algorithm is a list
+of observations for one player in a kriegspiel game.  We assume that the agent has perfect recall (i.e., remembers all
+of its own decisions), which is a reasonable assumption for kriegspiel.  (See~\cite{gilpin07algorithms} for a further
+discussion of perfect recall.)  
+
+The nodes in the search tree at depth $n$ correspond possible to possible sequences of $n$ plies from the start state.
+There is a search space variable for each ply in the game, and the values that a variable can take on are all possible
+legal moves.  A kriegspiel game may last for on the order of tens of plies.  Moves are parameterized by the piece that
+is relocating (both black and white have six different types of pieces: king, queen, rook, bishop, knight, pawn), the
+source square, and the destination square.  Only a few hundred of the $64 \times 64 \times 6$ combinations represent
+moves that are legitimate in at least some scenarios.  For example, no piece could ever move from a3 to h2\footnote{We
+observe the convention that on an $8 \times 8$ chessboard the rows are numbered 1 to 8 and the columns are labeled a to
+h.} in one move.
+
+Information set generation, then, is an all-solutions search through the space.  Whenever a node in the search tree is
+found to be inconsistent with the actual observation given in the input, the subtree rooted at that node is pruned.
+There are types of observations that must match in order for the state to be found: check status, pawn tries, and 
+illegal moves available/attempted.
+
+Figure~\ref{codelisting} shows the function at the heart of our information set generation algorithm.  The actual
+observations can be viewed as global, read-only variables.  All solutions (i.e., all nodes in the information set) will
+be located at the same depth in the tree: the depth that is equal to the number of plies in the observation list.
+Referee announcements regarding pawn tries or a player being in check are made prior to a move.  The algorithm checks
+for the consistency of these observations in lines $5--6$.  If the search reaches the appropriate depth and passes these
+tests, then a solution has been found and is reported (line $7$).  
+
+Otherwise, we consider the possible moves that can be made from that state.  If the player whose turn it is to move at
+the current level of the search tree is the same player from whose perspective we have received observations, then the
+next step is to make sure that every legal move that was attempted at the player at that ply is also at least
+attemptable at the game position that corresponds to the game tree node (lines $15--22$).  We know exactly the legal
+move that was ultimately made at this depth (because we are assuming perfect recall), and we check to make sure that
+this move is indeed legal (pruning otherwise).  If so, we apply that move and recurse (lines $24--32$).  This
+corresponds to a ``forced move'' in the general search paradigm.
+
+On the other hand, if the player whose turn it is to move at the current depth of the search tree is the opponent, then
+must consider all possible legal moves to branch on.  We first check to make sure that the number of legal moves from
+this position is at least as large as the number of illegal moves that the opponent attempted (i.e., the number of times
+the referee said ``No'' before finally accepting the opponent's move).  This is shown in lines $39--42$.  At this point
+we generate a child for each move that would be accepted by the referee and recurse (lines $44--52$).
+
+One of our goals was to assess the varying utilities of the different pruning criteria.  We tried some different
+orderings of the tests and were somewhat surprised (and disappointed) to see that there was actually a fairly minimal
+impact on performance.  This could be due to the fact that because of the tedious nature of encoding problem instances
+from actual games, we were not able to run experiments of a wide variety of types of positions (i.e., different styles
+of play).
+
 \begin{figure}
 %\begin{listing}
 \begin{lstlisting}
@@ -454,14 +500,18 @@ void generateInformationSet(uint16_t* trueState, uint16_t* possState, bool white
 \label{codelisting}
 \end{figure}
 
-Figure~\ref{codelisting}
-
 \section{Performance Results}
-
+We built our search on top of the same general search engine that we used in class.  The performance results reported in
+this section were obtained by running our program on Bleuprint with up to 1024 processors.
 
 Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
 the size of the information set was about 4.5 million.  (This instance is not necessarily representative of all games or
-states of the game, but it was not cherry-picked in any way.)
+states of the game, but it was not cherry-picked in any way.)  The table shows that the problem is indeed highly
+parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
+speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
+on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
+This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
+for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
 
 \begin{table}
 \centering
@@ -479,8 +529,8 @@ states of the game, but it was not cherry-picked in any way.)
 512	&	4.59	&	331\\
 1024	&	2.64	&	576\\
 \end{tabular}
-\caption{Speedups for a randomly selected problem instance on 1--1024 processors.  The size of the information set in
-this instance is 4,495,121.}
+\caption{Speedups for a randomly selected problem instance on 1--1024 processors.  The input observations were from the
+10th ply of the game tree and the size of the information set in this instance is 4,495,121.}
 \label{speedups}
 \end{table}
 
@@ -488,9 +538,19 @@ Figure~\ref{3schemes}
 \begin{figure}
 \centering
 \includegraphics[width=0.7\textwidth]{plots/3schemes.pdf}
-\caption{3schemes}
+\caption{Experiments using different load balancing strategies.}
 \label{3schemes}
 \end{figure}
+
+In our next round of experiments, we set out to compare a few different load-balancing strategies for the problem.  We
+used the random, work stealing, and neighborhood balancing strategies that are available in the general purpose search
+engine.  These results are shown in Figure~\ref{3schemes}.  Our results show that there was actually very little
+variation in performance across the different strategies.  We did notice that across all of our experiments, the work
+stealing approach appeared to be consistently---if only marginally---better than the others.  Our hypothesis here is
+that perhaps the nodes are rarely starved for work.  In other words, perhaps the very nature of the problem means that
+the load is naturally well-balanced and that the load-balancer rarely needs to do a significant amount of
+redistribution.  This is probably also related to the fact that we are doing an all-solutions search. 
+
  
 Figure~\ref{3depths}
 \begin{figure}
@@ -505,31 +565,57 @@ Figure~\ref{3depths}
 \caption{3depths}
 \label{3depths}
 \end{figure}
+
+We next attempted to measure the isoefficiency of the problem---how is efficiency of the parallelization of the
+algorithm affected by {\em size} of the problem?  To test this we varied the number of plies in the test instance from
+8 to 12. We used the work stealing load balancing strategy.  The results are shown in Table~\ref{3depths}.  The data are
+the same in both tables, but the one on the left uses a log-log scale.  In the easiest case (depth 8), there isn't
+enough additional parallel work to justify the jump from 256 to 1024 processors, and performance actually degrades.
+Other than that, however, we see consistent speedups as we increase the number of processors.  The plot on the right helps to
+illustrate the good isoefficiency of the problem.  As the size of the problem increaes, the amount of parallelizable
+work available also increases, and therefore the steepness of the speed curve is higher for larger problem sizes, as the
+number of processors increases.
  
 Figure~\ref{dep8}
 \begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{plots/dep8.pdf}
+\includegraphics[width=0.6\textwidth]{plots/dep8.pdf}
 \caption{dep8}
-\label{dep8}
+\label{Grainsize control data for depth 8 problems.}
 \end{figure}
  
 Figure~\ref{dep10}
 \begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{plots/dep10.pdf}
+\includegraphics[width=0.6\textwidth]{plots/dep10.pdf}
 \caption{dep10}
-\label{dep10}
+\label{Grainsize control data for depth 10 problems.}
 \end{figure}
  
 Figure~\ref{dep12}
 \begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{plots/dep12.pdf}
+\includegraphics[width=0.6\textwidth]{plots/dep12.pdf}
 \caption{dep12}
-\label{dep12}
+\label{Grainsize control data for depth 12 problems.}
 \end{figure}
- 
+
+Finally, we ran some experiments to measure the effect of grainsize on the problem.  The results are shown in
+Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet spot'' for each problem size.  (At least it is
+clear for this particular instance.  It is possible that there would be different behavior on different problem
+instances.)  When the grainsize is too small, the overall computation is hampered by excessive parallel overhead
+(communication, queueing of nodes to expand, load balancing operations).  On the other hand, when the grain size is too
+large, it becomes too difficult to ensure that all processors are busy and processors are not idling with no work to do
+while a small number of processors are busy doing large-sized chunks of work.  
+
+In our experiments, the optimal grainsize is clearly related to the size of the problem, the depth of the search tree.
+The optimal sequential threshold seems to be $2--4$ less than the problem depth.  Since the depth of all solutions is
+the same for each problem instance, this means that the number of levels that should be searched sequentially is fairly
+consistent across problem sizes.  We noted that the number of solutions found---in other words, the size of the
+information sets---is typically fairly large with respect to the total number of nodes expanded.  (We don't have hard
+figures, but we estimate that it was often $30-40\%$).  This high density of solutions limits the variability that can
+be present in the amount of work to be done at the nodes representing the last few levels of the tree.  This means that
+the best grainsize is also likely to be fairly predictable.  
 
 \section{Related Work}
 An overview of the theory of imperfect information games and other basic topics in game theory can be found in
@@ -624,8 +710,8 @@ The information set generation algorithm that we have implemented here is one th
 alluded to in~\cite{parker05game} and~\cite{russell05efficient}.  It is analogous to the ``expand-at-the-tip'' strategy
 for the Hamiltonian Circuit problem.  An alternative information set generation algorithm is described in
 ~\cite{richards09information} and could potentially improve the search efficiency greatly by exploiting variable
-ordering.  This would be analgous to the disconnected edge-pairs\footnote{what we referred to as ``algorithm 2'' in
-class} heuristic for the Hamiltonian Circuit problem.  Rather than search from the root node going forward, this
+ordering.  This would be analgous to the disconnected edge-pairs\footnote{This is what we referred to as ``algorithm 2'' in
+class.} heuristic for the Hamiltonian Circuit problem.  Rather than search from the root node going forward, this
 algorithm would seek opportunities for pruning based on the propagation of logical consequences from each move both
 forward and backward in time.  This, incidentally, is more consistent with the way human players would analyze the game.
 For example, if a player's proposed bishop move is rejected and the bishop is sufficiently removed from its own king,
@@ -633,12 +719,12 @@ then the player may infer that one of his opponent's pieces is along that reject
 must have been the destination of a prior move by the opponent.  If a recent move by that bishop crossed the same path,
 then that would be hard evidence that those squares were empty at the time.  And therefore, the arrival of the
 opponent's piece must have been between the previous (successful) bishop move and the current (unsuccessful) bishop
-move.  To implement this algorithm, we envision the use of planning graph type data structures ~\cite{GRAPHPLAN}.
+move.  To implement this algorithm, we envision the use of planning graph type data structures ~\cite{blum97fast}.
 Planning graphs have a sequence of alternating levels of state constraints and action constraints.  State constraints
 would be of the form $at(bishop,d4) \vee at(bishop,e6)$ or $!occupied(e4)$.  Action constraints would be of the form
 $move(knight,a4,c5) \vee move(knight,e6)$.  At a minimum, each level would require a data structure with a bit for each
 possible action/state.  Propagating the constraints would require much of the same machinery used in STRIPS-like
-planning algorithms~\cite{STRIPS}, and one of the many knobs that would need to be tuned would be the depth of the
+planning algorithms~\cite{chen05solving}, and one of the many knobs that would need to be tuned would be the depth of the
 propagation for each constraint.  (Should the consequences of a known action or non-action be propagated one move into
 the future and one move into the past?  More?  Less?)  Additionally, there would be a significant and interesting
 tradeoff in the effectiveness of pruning and the and the size of the data structures that would have to be encoded in
@@ -655,12 +741,22 @@ allocation issues that could be improved.
 
 
 \section{Appendix A}
-Figure~\ref{fulltree} shows the full game tree for a simple variant of poker known as Kuhn poker.  There are three
-cards: a king, a queen, and a jack.  The dealer deals one card to each of two players.  Each player antes one unit, and
-there is one simple round of betting, in which the size of the pot may be doubled.  Left branches denote check/fold;
-right branches denote bet/call.  For this zero-sum game, terminal nodes are labeled with payoffs to player 1, whose
-decision points are shown in triangles.  Connections between nodes in the same information set are shown with dotted
-lines.
+The purpose of this figure is simply to help visualize the concept of information sets in game trees.  The tree for
+kriegspiel is very difficult to visualize/depict (even an interesting part of the tree).  Figure~\ref{fulltree} shows
+the full game tree for a simple variant of poker known as Kuhn poker, which we hope will serve to at least make the
+concept clear, even if the poker game itself is not immediately relevant.  There are three cards: a king, a queen, and a
+jack.  The dealer deals one card to each of two players.  Each player antes one unit, and there is one simple round of
+betting, in which the size of the pot may be doubled.  Left branches denote check/fold; right branches denote bet/call.
+For this zero-sum game, terminal nodes are labeled with payoffs to player 1, whose decision points are shown in
+triangles.  Connections between nodes in the same information set are shown with dotted lines.  The top level shows
+three different information sets for the first player, one for each possible card that could be dealt to him.  There are
+two nodes in each set, because no matter what the deal is, there are two possibilities for the card that the other
+player holds.  The leftmost information set on the bottom level corresponds to player 1's observation that he was dealt
+a king and checked, and then the opponent wagered.  The second player has six information sets as well, but they are all
+at the same level of the tree.  Like the first player, the second player has a separate information set for each
+possible card that he could be dealt.  And the two nodes in each set are there because there are two possibilities for
+the opponent card.  The second player also gets to know whether the first player checked of bet, and that is why there
+are twice as many information sets.
 
 \begin{figure}
 \scalebox{.72}{
