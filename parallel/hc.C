@@ -1,5 +1,7 @@
+#include <set>
 #include <vector>
-#include "searchEngineAPI.h"
+#include "searchEngine.h"	// MDR++
+//#include "searchEngineAPI.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,11 +11,12 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <set>
 #include <string.h> // memcpy
 
 #include "hc.h"
 //#include "gameLogic.h"
+void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* possState, bool whiteMove, /*uint16_t* moveHistory, */
+				uint16_t* possHistory, /*VecSetMove& failedMoves,*/ uint16_t** levels, int depth/*, int maxdepth*/);
 
 using namespace std;
 int vertices;
@@ -30,13 +33,13 @@ bool whitePerspective;
 
 uint16_t moveHistory[100];
 int maxdepth;
-vector< set<uint16_t> > failedMoves(100);
+CkVec< set<uint16_t> > failedMoves(100);
 
 long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
 long long diagonalDests[64]; // used for bishop, king, and queen
 long long knightDests[64]; // used only for knights
 //	globalState
-vector<uint16_t> globalState;
+CkVec<uint16_t> globalState;
 
 #define MAX_BRANCH 25
 #define MAX_DEPTH 8
@@ -1690,7 +1693,7 @@ void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
 
 // Just print out the sequences of states implied by moveHistory, and the number of corresponding
 // illegal attempted moves at each step
-void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, uint16_t * moveHistory, int nMoves)
+void processMoveHistory(uint16_t* state, CkVec<set <uint16_t> > failedMoves, uint16_t * moveHistory, int nMoves)
 {
 //  cout << "Moves: " << endl;
 //  printState(state);
@@ -1705,7 +1708,7 @@ void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, ui
 }
 
 // For testing purposes
-int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves)
+int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, CkVec<set <uint16_t> > & failedMoves)
 {
   static int testNumber = 1;
   switch (testNumber) {
@@ -1732,7 +1735,7 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
   }
 }
 
-int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory, vector< set <uint16_t> >failedMoves, uint16_t** levels, int depth, int maxdepth)
+int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory, CkVec< set <uint16_t> >failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   if (depth == maxdepth) {
 	//printState(state);
@@ -1815,6 +1818,7 @@ bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 // number of moves in possState.
 // Since both players would hear the moderator's declarations about pawn tries and "check", we do not continue unless the pawn tries and check status
 // of possState and trueState are equivalent.
+	// NOTE: readonly args have been extracted
 	// Arg 0: Player whose perspective we are working from.  If it's white than we assume that we know the even numbered
         // entries in moveHistory and failedMoves EXACTLY and that we have access to the NUMBER of failedMoves for the odd 
 	// numbered moves.  For black, it's the other way around.
@@ -1826,15 +1830,15 @@ bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
 void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
-  uint16_t* possHistory, VecSetMove& failedMoves, uint16_t** levels, int depth, int maxdepth)
+  uint16_t* possHistory, CkVec< set<uint16_t> >& failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   // Need to check that the messages match
-  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  
   if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
   if (depth == maxdepth) { // Then we have found a solution
 	nSolutions++;
-	searchEngineProxy.incState();
+	//searchEngineProxy.incState();
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
 	uint16_t destructibleState[16];
@@ -2050,7 +2054,7 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
 
 
 
-class HcState: public State {
+class HcState: public StateBase {
 public:
 
 	//depth	
@@ -2098,16 +2102,18 @@ public:
     } */
 };
 
-class HcCore: public AppCore {
-  public:
-    HcCore(){
-    }
+//class HcCore: public AppCore {
+//  public:
+//    HcCore(){
+//    }
 
-    inline void getStartState(NodeQueue *qs){
+   // inline void getStartState(NodeQueue *qs){
+	void createInitialChildren(Solver* solver) {
 
         // Ask for enough memory for the initial state;
          //HcState *startState = (HcState *)qs->registerState(sizeof(HcState),1);
-         HcState *startState = (HcState *)qs->registerRootState(sizeof(HcState));
+         //HcState *startState = (HcState *)qs->registerRootState(sizeof(HcState));
+         HcState *startState = (HcState *)solver->registerRootState(sizeof(HcState),0,1);
 				 
 		uint16_t state[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
@@ -2124,11 +2130,13 @@ class HcCore: public AppCore {
 		 copy(&state[0],&state[16],&startState->board[0]);
 		 copy(&state[0],&state[16],&startState->trueState[0]);
 	//	 startState->board 
-		 qs->push(startState);
+		 //qs->push(startState);
+		 solver->process(startState);
 
     }
 
-    inline void expand(State *curState, NodeQueue *qs){
+    //inline void expand(State *curState, NodeQueue *qs){
+    void createChildren(StateBase* curState, Solver* solver, bool parallel) {
       HcState *parent = ((HcState *)curState);
       int childnum = 0;
 	  int parentk = parent->k;
@@ -2148,13 +2156,15 @@ class HcCore: public AppCore {
 #ifdef DEBUG
 		CkPrintf("Expanding state with depth %d  : \n", parentk);
 #endif
-      if(parentk < sequential_threshold){
+      //if(parentk < sequential_threshold){
+	if (parallel) {
 
 			  //Check if it is a solution 
 	if(parentk == maxdepth )
 	{
 
 	nSolutions++;
+	solver->reportSolution(); // MDR++
 //	searchEngineProxy.incState();
 #ifdef DEBUG
 		CkPrintf("Goal reached \n"); 
@@ -2234,7 +2244,7 @@ class HcCore: public AppCore {
  //   possHistory[depth] = actualMove;
 
 // Push the new states onto queue 
-				HcState *child = (HcState *)qs->registerState(sizeof(HcState) + (depth+1)*sizeof(uint16_t), childnum, MAX_CHILDREN);
+				HcState *child = (HcState *)solver->registerState(sizeof(HcState) + (depth+1)*sizeof(uint16_t), childnum, MAX_CHILDREN);
 			//	HcState *child = (HcState *)qs->registerState(sizeof(HcState));
 				child->k = parentk+1;
 				child->moveWhite = !whiteMove;
@@ -2249,7 +2259,8 @@ class HcCore: public AppCore {
 				child->possHistory[depth] = actualMove;
 				copy(&newTrueState[0], &newTrueState[16], child->trueState);
 
-				qs->push(child);
+				//qs->push(child);
+				solver->process(child);
 				childnum++;
 				//Free newStates
 			//	delete [] newstates[j];
@@ -2282,7 +2293,7 @@ class HcCore: public AppCore {
       uint16_t& move = levels[i];
       if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
 
-	HcState *child = (HcState *)qs->registerState(sizeof(HcState) + (depth+1)*sizeof(uint16_t), childnum, MAX_CHILDREN);
+	HcState *child = (HcState *)solver->registerState(sizeof(HcState) + (depth+1)*sizeof(uint16_t), childnum, MAX_CHILDREN);
 			//	HcState *child = (HcState *)qs->registerState(sizeof(HcState));
 				child->k = parentk+1;
 				child->moveWhite = !whiteMove;
@@ -2292,26 +2303,24 @@ class HcCore: public AppCore {
 
 				child->possHistory = (uint16_t *)((char *)child +sizeof(HcState));
 				for(int p =0; p <(child->k)-1; p++)
-						child->possHistory[p] = possHistory[p];
+					child->possHistory[p] = possHistory[p];
 
 				child->possHistory[depth] = move;
 				
 				copy(&newTrueState[0], &newTrueState[16], child->trueState);
 			//	copy(&possHistory, &possHistory[j][16], child->board);
 
-				qs->push(child);
+				//qs->push(child);
+				solver->process(child);	
 				childnum++;
 
-//        applyMove(possState,newPossState,move);
-  //      possHistory[depth] = move;
-    //    generateInformationSet(whitePerspective, newTrueState, newPossState, !whiteMove,  moveHistory, possHistory, failedMoves, levels, depth+1, maxdepth);
       }
     }
   }
 }
 
 	
-	
+// Search sequentially MDR++	
 	 else{
 			 	uint16_t attemptableMoves[NMOVES*MAXDEPTH];
 
@@ -2322,116 +2331,9 @@ class HcCore: public AppCore {
         for (int i = 0; i < MAXDEPTH; i++) {
 		moveList[i] = &attemptableMoves[i*NMOVES];
         }
-CkPrintf("11111111111111111111111111111111111111111\n");
         recursive_hc(parent->trueState,parent->board,parent->moveWhite,parent->possHistory,moveList,depth);
-		CkPrintf("22222222222222222222222222222222222222222222222222222\n");
       }
     }
-/*
-    void recursive_hc(uint16_t *trueState,uint16_t *possState,bool whiteMove,uint16_t *possHistory,int depth,uint16_t **levels){
-
-
-	  assert(depth<=maxdepth);
-
-  // Need to check that the messages match
-  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
-  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
-
-  if (depth == maxdepth) { // Then we have found a solution
-	nSolutions++;
-//	searchEngineProxy.incState();
-	// Right now, just display the solution; eventually we'll need to do something else with it
-#ifdef PRINT_SOLUTIONS
-	uint16_t destructibleState[16];
-        copyState(globalState,destructibleState);
-        for (int i = 0; i < depth; i++) {
-	  if (i%2 == 0) cout << (i/2+1) << ". ";
-	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
-	  applyMove(destructibleState,possHistory[i]);
-	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
-        }
-        cout << endl;
-        printState(destructibleState);
-#endif
-	return;
-  }
-
-  // Note: since the same application is being done for every call at this depth; we could just compute the
-  // new global state at this depth once before the initial call and then just move a pointer around
-  uint16_t newTrueState[16]; 
-  if(moveHistory[depth]==0) CkPrintf("depth %d \n ",depth);
-  assert(moveHistory[depth]);
-
-  applyMove(trueState,newTrueState,moveHistory[depth]);
-
-  uint16_t newPossState[16]; 
-  // Note that the legality of all the moves at levels[depth] will be set according the possible state, not actual
-  int nMoves = 0;
- // TODO: Rather than generate ALL the moves in advance (and incur the associated penatly for storing them all at each level)
-  // we could conceivably redo things so that we only keep track of enough information (src square, direction, and offset) to
-  // generate the NEXT attemptable move
-  generateAttemptableMoves(possState, whiteMove, levels[depth], nMoves,false);
-  checkForCheck(possState, whiteMove, levels[depth], nMoves);
-  assert (nMoves < NMOVES); // 
-
-  if (whitePerspective == whiteMove) { // active player is the player from whose perspective we are working
-    SetMove& failures = failedMoves[depth];
-    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
-      uint16_t move = *itr ;
-      if (!foundMatchingMove(move,levels[depth],nMoves)) {
-        // This means that one of the illegal moves that this player made in the actual game is not 
-        // legal/attemptable from this position.  So this overall sequence of moves is not plausible
-	// and we must prune.
-        return; 
-      }
-    }
-    // If we get to this point, all of the failed moves are consistent
-    // We know exactly what the actual move was; make it
-    uint16_t& actualMove = moveHistory[depth];
-    if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
-      // This means that the move that we know we made at this depth is not legal under this possible
-      // sequence of moves.  So we must prune.
-      return; 
-    }
-    // Otherwise, recurse 
-    applyMove(possState,newPossState,actualMove);
-    possHistory[depth] = actualMove;
-    recursive_hc(newTrueState, newPossState, !whiteMove, possHistory, depth+1,levels);
-
-  } else { 
-    // We are at a level in the search tree where we are considering the possible moves for the opponent.
-    // We assume that we know the number of attempted illegal moves (because we would have heard the moderator
-    // declare each one to be illegal as it was made).  But we do not know the move in moveHistory or the specific
-    // moves in failedMoves that did not succeed. 
-
-    // Ensure that there are enough attemptable moves in the state to match the observed number of failed attempts
-    unsigned nIllegalMoves = countIllegalMoves(levels[depth], nMoves);
-    if (nIllegalMoves < failedMoves[depth].size()) {
-        // This means that the number of moves possible for the opponent at this hypothetical stage is less than the number of
-	// attemptable moves it actually tried.  So we must prune.
-	return; 
-    }
-
-    // Now we want to try each possible move that is legally executable (not just attemptable) 
-    for (int i = 0; i < nMoves; i++) {
-      uint16_t& move = levels[depth][i];
-      if (isLegal(move)) { // Obviously, we can only execute the moves that are actually legal from this state
-        applyMove(possState,newPossState,move);
-        possHistory[depth] = move;
-      recursive_hc(newTrueState, newPossState, !whiteMove, possHistory, depth+1,levels);
-      }
-    }
-
-
-
-
-
-			//////////////////////////////////////////////////////
-
-	}
-	}
-*/
-
 void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* possState, bool whiteMove, /*uint16_t* moveHistory, */
 				uint16_t* possHistory, /*VecSetMove& failedMoves,*/ uint16_t** levels, int depth/*, int maxdepth*/)
 {
@@ -2443,6 +2345,7 @@ void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* poss
 
   if (depth == maxdepth) { // Then we have found a solution
 	nSolutions++;
+	//solver->
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
 	uint16_t destructibleState[16];
@@ -2526,32 +2429,24 @@ void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* poss
 }
 
 	//Is it used ??
-    inline bool isGoal(State *s){
+//    inline bool isGoal(State *s){
+//
+//#ifndef ONESOL
+//			return false;
+//#endif
+//		CkPrintf("Goal reached \n");	
+//      HcState *state = (HcState *)s;
+//      if(state->k == MAX_DEPTH )  
+//          return true;
+//      else
+//        return false;
 
-#ifndef ONESOL
-			return false;
-#endif
-		CkPrintf("Goal reached \n");	
-      HcState *state = (HcState *)s;
-      if(state->k == MAX_DEPTH )  
-          return true;
-      else
-        return false;
-
-    }
-
-/*
-    inline bool terminate(State *s){
-      NQueenState *state = (NQueenState *)s;
-      return (state->currentrow == numQueens-1 ? true:false);
-    }
-	*/
-
-    void unpack(NodeQueue *q, State *ss, size_t size){
-      q->embed(ss, size);
-    }
-
-};
+//    }
+//    void unpack(NodeQueue *q, State *ss, size_t size){
+//      q->embed(ss, size);
+//    }
+//
+//};
 
 Hc::Hc( CkArgMsg* msg )
 {
@@ -2617,42 +2512,17 @@ Hc::Hc( CkArgMsg* msg )
 	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,MAX_DEPTH);
 
 	maxdepth = nExecutedMoves;
-
-//int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
-	// Display the actual sequence of moves (for testing/debugging purposes)
-
-		
 		cout << nExecutedMoves << endl;
         processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
 	//return 0;
 
 	cout << "BEGINNING INFORMATION SET GENERATION" << endl;
 
-/*
-	//char* filename = "alb0003.hcp";
-	//FILE *file = fopen(filename, "r");
-	FILE *file = fopen(msg->argv[2], "r");
-	
-	vertices = atoi((*new string(msg->argv[2])).substr(3, 4).c_str());
-
-	char *str = new char[1000];
-	for(int i=0; i<7; i++)
-        fgets(str, 1000, file);
-        
-    int src, dest;
-    do{
-	   	sscanf(str, "%d %d", &src, &dest);
-	   	fgets(str, 1000, file);
-	}while(strcmp(str, "-1\n")!=0);
-	fclose()
-*/
-
-   
     searchEngineProxy.start();
 }
 
-AppCore *newAppCore(){
-  return new HcCore;
-}
+//AppCore *newAppCore(){
+//  return new HcCore;
+//}
 
 #include "hc.def.h"
