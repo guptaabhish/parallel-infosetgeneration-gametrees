@@ -43,7 +43,7 @@ long long knightDests[64]; // used only for knights
 vector<uint16_t> globalState;
 
 #define MAX_BRANCH 25
-#define MAX_DEPTH 8
+#define MAX_DEPTH 6
 #define MAX_CHILDREN 64
 //#define DEBUG
 //#define ONESOL
@@ -2452,12 +2452,12 @@ void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* poss
 Hc::Hc( CkArgMsg* msg )
 {
 	CkPrintf("--------------------\nstart\n");
-		if(msg->argc !=2) 
+/*		if(msg->argc !=2) 
 	{
 			CkPrintf("Usage :Program name Input hcp filename \n"); 
 			CkExit();
 	}
-   delete msg;
+  */ delete msg;
 	 nSolutions = 0;
 
 	// One time set up to mark plausible src/destination pairs for different piece types
