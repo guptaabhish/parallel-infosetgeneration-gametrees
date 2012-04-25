@@ -1,8 +1,10 @@
-OPTS = -O2 -DOPTIMIZE -DUSE_CMIPOOL -DFIRST_SOLUTION -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
+#OPTS = -O2 -DOPTIMIZE -DUSE_CMIPOOL -DFIRST_SOLUTION -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
+#OPTS = -O2 -DOPTIMIZE -DUSE_CMIPOOL -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
+OPTS = 
 
 # Fill in the path to CHARMC here
 #CHARMC_PATH=~/charmgit/charm/bin
-CHARMC_PATH=~/charm-6.4.0/charm/bin
+CHARMC_PATH=~/charm-6.4.0/bin
 CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 
 ####################################
@@ -13,8 +15,11 @@ CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 #all: hc hc.rndm hc.wkstl hc.nbr  
 all: hc 
 
-hc: searchEngine.o hc.o
-	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc -tracemode projections #-memory paranoid
+hc: hc.o
+	$(CHARMC) -language charm++  hc.o -o hc -module searchEngine 
+
+#hc: searchEngine.o hc.o
+#	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc -tracemode projections #-memory paranoid
 
 #hc.rndm: searchEngine.o hc.o
 #	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc.rndm -balance rand #-memory paranoid
@@ -25,8 +30,8 @@ hc: searchEngine.o hc.o
 #hc.nbr: searchEngine.o hc.o
 #	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc.nbr -balance neighbor #-memory paranoid
 
-hc_prj: searchEngine.o hc.o
-	$(CHARMC) -language charm++  -tracemode projections hc.o searchEngine.o -o hc_prj
+#hc_prj: searchEngine.o hc.o
+#	$(CHARMC) -language charm++  -tracemode projections hc.o searchEngine.o -o hc_prj
 
 hc.decl.h: hc.ci
 	$(CHARMC)  hc.ci

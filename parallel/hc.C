@@ -1,5 +1,6 @@
 #include <set>
 #include <vector>
+#include "pup_stl.h"
 #include "searchEngine.h"	// MDR++
 //#include "searchEngineAPI.h"
 
@@ -33,13 +34,13 @@ bool whitePerspective;
 
 uint16_t moveHistory[100];
 int maxdepth;
-CkVec< set<uint16_t> > failedMoves(100);
+vector< set<uint16_t> > failedMoves(100);
 
 long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
 long long diagonalDests[64]; // used for bishop, king, and queen
 long long knightDests[64]; // used only for knights
 //	globalState
-CkVec<uint16_t> globalState;
+vector<uint16_t> globalState;
 
 #define MAX_BRANCH 25
 #define MAX_DEPTH 8
@@ -1693,7 +1694,7 @@ void checkForCheck(uint16_t* state, bool whiteMove, uint16_t* moves, int nMoves)
 
 // Just print out the sequences of states implied by moveHistory, and the number of corresponding
 // illegal attempted moves at each step
-void processMoveHistory(uint16_t* state, CkVec<set <uint16_t> > failedMoves, uint16_t * moveHistory, int nMoves)
+void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, uint16_t * moveHistory, int nMoves)
 {
 //  cout << "Moves: " << endl;
 //  printState(state);
@@ -1708,7 +1709,7 @@ void processMoveHistory(uint16_t* state, CkVec<set <uint16_t> > failedMoves, uin
 }
 
 // For testing purposes
-int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, CkVec<set <uint16_t> > & failedMoves)
+int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, vector<set <uint16_t> > & failedMoves)
 {
   static int testNumber = 1;
   switch (testNumber) {
@@ -1735,7 +1736,7 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
   }
 }
 
-int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory, CkVec< set <uint16_t> >failedMoves, uint16_t** levels, int depth, int maxdepth)
+int generateRandomMoves(uint16_t* state, bool whiteMove, uint16_t * moveHistory, vector< set <uint16_t> >failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   if (depth == maxdepth) {
 	//printState(state);
@@ -1830,7 +1831,7 @@ bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
 void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t* possState, bool whiteMove, uint16_t* moveHistory, 
-  uint16_t* possHistory, CkVec< set<uint16_t> >& failedMoves, uint16_t** levels, int depth, int maxdepth)
+  uint16_t* possHistory, vector< set<uint16_t> >& failedMoves, uint16_t** levels, int depth, int maxdepth)
 {
   // Need to check that the messages match
   if (!samePawnTries(trueState, possState, whiteMove)) return;  
