@@ -4,7 +4,7 @@ OPTS =
 
 # Fill in the path to CHARMC here
 #CHARMC_PATH=~/charmgit/charm/bin
-CHARMC_PATH=~/charm-6.4.0/bin
+CHARMC_PATH=~/work/CHARM/charm/bin
 CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 
 ####################################

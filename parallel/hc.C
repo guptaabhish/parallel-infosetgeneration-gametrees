@@ -2521,9 +2521,21 @@ Hc::Hc( CkArgMsg* msg )
 
     searchEngineProxy.start();
 }
+  //Search Engine Option
+    int parallelLevel()
+    {
+	int initial_grainsize = 6;
+        return initial_grainsize;
+    }
+
+    int searchDepthLimit()
+    {
+        return 1;
+    }
 
 //AppCore *newAppCore(){
 //  return new HcCore;
 //}
+    SE_Register(HcState, createInitialChildren, createChildren, parallelLevel, searchDepthLimit);
 
 #include "hc.def.h"
