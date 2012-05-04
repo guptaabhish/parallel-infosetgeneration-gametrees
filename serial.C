@@ -14,6 +14,7 @@ using namespace std;
 bool whitePerspective=false;
 int nSolutions;
 long long numStates=0;
+enum MoveFlag { E_NONE, E_BLOCKED, E_CHECKED, E_PAWN_CAPTURE};
 //#define PRINT_SOLUTIONS 
 
 // Use sets of moves to keep track of the list of all illegal moves that were tried before
@@ -90,6 +91,20 @@ string disp16(uint16_t* x, int max)
   return os.str();
 }
 
+// Given a chess square of the form a1-h8, return the integer 0-63 that corresponds. a8 is 0, h1 is 63
+uint16_t chessSquareToInt(const string& square)
+{
+  assert (square.size() == 2);
+  char file = square[0];
+  assert (file >= 'a');
+  assert (file <= 'h');
+  int fileId = (int)(file - 'a');
+  int rankMinus1 = 7 - (int)(square[1] - '1');
+  assert (rankMinus1 >= 0);
+  assert (rankMinus1 < 8);
+  return rankMinus1 * 8 + fileId;
+}
+
 // Use the src and destination squares together with the appropriate flags to encode an attemptable move
 // Bits 0-5 are destination square, 6-11 are souurce square, 13 denotes pawn capture, 14 means this move
 // would leave the player who made it in check, 15 means the move is attemptable but blocked
@@ -99,6 +114,24 @@ uint16_t encodeMove(uint16_t from, uint16_t to, bool blocked, bool checked, bool
   result = (blocked << 15) | (checked << 14) | (pawntry << 13) | (from << 6) | to ;
   return result;
 }
+
+uint16_t encodeMove(const string& moveString, MoveFlag blocked, MoveFlag checked, MoveFlag pawnCapture) 
+{
+  bool blockedFlag = (blocked == E_BLOCKED);
+  bool checkedFlag = (checked == E_CHECKED);
+  bool pawnCaptureFlag = (pawnCapture == E_PAWN_CAPTURE);
+  string startSquareStr = moveString.substr(1,2);
+  string endSquareStr = moveString.substr(4,2);
+  uint16_t startSquare = chessSquareToInt(startSquareStr);
+  uint16_t endSquare = chessSquareToInt(endSquareStr);
+  return encodeMove(startSquare, endSquare, blockedFlag, checkedFlag, pawnCaptureFlag);
+}
+
+uint16_t encodeMove(const string& moveString)
+{
+  return encodeMove(moveString, E_NONE, E_NONE, E_NONE);
+}
+
 
 // Return the destination square of an encoded Move
 uint16_t extractDestination(const uint16_t move)
@@ -1652,6 +1685,7 @@ void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* move
   cout << "Moves: " << endl;
   printState(state);
   for (unsigned i = 0; i < nMoves; i++) {
+    cout << "Move " << i << endl;
     cout << "Failed moves: " << failedMoves[i].size() << endl;
     uint16_t& move =  moveHistory[i];
     dispMove(move);
@@ -1664,7 +1698,7 @@ void processMoveHistory(uint16_t* state, VecSetMove& failedMoves, uint16_t* move
 // For testing purposes
 int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves)
 {
-  static int testNumber = 2;
+  static int testNumber = 3;
   switch (testNumber) {
   case 0:
     moveHistory[0] = encodeMove(52,36,false,false);  // white king pawn advances two
@@ -1712,6 +1746,62 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     failedMoves[17].insert( encodeMove(4,12,false,true) ); // this move tests whether the checking piece is a queen or a bishop 
     moveHistory[18] = encodeMove(13,5,false,false); // Qxf8++ white takes bishop and wins.
     return 19;
+  case 3:
+    // Move 1
+    moveHistory[0] = encodeMove("Pg2:g4");
+    moveHistory[1] = encodeMove("Pg7:g5");
+    // Move 2
+    moveHistory[2] = encodeMove("Pd2:d3");
+    moveHistory[3] = encodeMove("Bf8:g7");
+    // Move 3
+    moveHistory[4] = encodeMove("Pf2:f4");
+    moveHistory[5] = encodeMove("Pg5xf4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 4
+    moveHistory[6] = encodeMove("Bc1xf4");
+    failedMoves[7].insert( encodeMove("Bg7:a1",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[7] = encodeMove("Bg7xb2");
+    // Move 5
+    moveHistory[8] = encodeMove("Bf4:e5");
+    moveHistory[9] = encodeMove("Bb2xa1");
+    // Move 6
+    moveHistory[10] = encodeMove("Be5xa1");
+    moveHistory[11] = encodeMove("Pf7:f6");
+    // Move 7
+    moveHistory[12] = encodeMove("Pg4:g5");
+    moveHistory[13] = encodeMove("Ke8:f7");
+    // Move 8
+    moveHistory[14] = encodeMove("Pe2:e4");
+    moveHistory[15] = encodeMove("Ph7:h6");
+    // Move 9
+    moveHistory[16] = encodeMove("Qd1:h5+");
+    failedMoves[17].insert( encodeMove("Kf7:g6",E_NONE,E_CHECKED, E_NONE) ); 
+    moveHistory[17] = encodeMove("Kf7:g7");
+    // Move 10
+    moveHistory[18] = encodeMove("Bf1:h3");
+    moveHistory[19] = encodeMove("Kg7:h7");
+    // Move 11
+    moveHistory[20] = encodeMove("Bh3:f5");
+    moveHistory[21] = encodeMove("Kh7:g7");
+    // Move 12
+    moveHistory[22] = encodeMove("Qh5:g6");
+    moveHistory[23] = encodeMove("Kg7:f8");
+    // Move 13
+    moveHistory[24] = encodeMove("Qg6:h7");
+    moveHistory[25] = encodeMove("Pe7:e6");
+    // Move 14 
+    moveHistory[26] = encodeMove("Qh7xh8");
+    moveHistory[27] = encodeMove("Pe6xf5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 15 
+    moveHistory[28] = encodeMove("Pg5xf6", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    failedMoves[29].insert( encodeMove("Ng8xf6",E_NONE , E_CHECKED, E_NONE) ); 
+    moveHistory[29] = encodeMove("Kf8:f7");
+    // Move 16
+    moveHistory[30] = encodeMove("Qh8:g7");
+    moveHistory[31] = encodeMove("Kf7:e6");
+    // Move 17 
+    moveHistory[32] = encodeMove("Qg7xg8");
+    moveHistory[33] = encodeMove("Qd8xg8");
+    return 34;
   }
 }
 
@@ -1816,8 +1906,14 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
 //numStates++;
 //if(numStates%1000==0) printf("%d\n",numStates);
   // Need to check that the messages match
-  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
-  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
+  if (!samePawnTries(trueState, possState, whiteMove)) {
+	//PRUNE
+	return;  
+  }
+  if (!sameCheckStatus(trueState, possState, whiteMove)) {
+	//PRUNE
+	return; 
+  }
 
   if (depth == maxdepth) { // Then we have found a solution
 	nSolutions++;
@@ -1834,6 +1930,7 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
         cout << endl;
         printState(destructibleState);
 #endif
+	// FOUND SOLUTION
 	return;
   }
 
@@ -1860,6 +1957,7 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
         // This means that one of the illegal moves that this player made in the actual game is not 
         // legal/attemptable from this position.  So this overall sequence of moves is not plausible
 	// and we must prune.
+	// PRUNE
         return; 
       }
     }
@@ -1869,6 +1967,7 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
     if (!foundMatchingMove(actualMove,levels[depth],nMoves)) {
       // This means that the move that we know we made at this depth is not legal under this possible
       // sequence of moves.  So we must prune.
+      // PRUNE
       return; 
     }
     // Otherwise, recurse 
@@ -1887,6 +1986,7 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
     if (nIllegalMoves < failedMoves[depth].size()) {
         // This means that the number of moves possible for the opponent at this hypothetical stage is less than the number of
 	// attemptable moves it actually tried.  So we must prune.
+	// PRUNE
 	return; 
     }
 
@@ -2024,8 +2124,21 @@ void generateAttemptableMoves(uint16_t* state, bool whiteMove, uint16_t* moves, 
   }
 }
 
+// Tests
+void testChessSquareToInt()
+{
+  assert(chessSquareToInt("h8") == 7);
+  assert(chessSquareToInt("a8") == 0);
+  assert(chessSquareToInt("h1") == 63);
+  assert(chessSquareToInt("a1") == 56);
+  assert(chessSquareToInt("a5") == 24);
+  assert(chessSquareToInt("b2") == 49);
+}
+
 int main(int argc, char* argv[])
 {
+	//testChessSquareToInt();
+ 	//return 0;
         nSolutions = 0;
 
 	// One time set up to mark plausible src/destination pairs for different piece types
@@ -2093,7 +2206,7 @@ int main(int argc, char* argv[])
 	// Arg 1: actual start state
 	// Arg 2: possible start state (we always assume that we know the start state)
 	// Arg 4: whose turn it is initially
-	// Arg 5 & Arg 7: the actuall sequences of moves that were accepted and the corresponding lists of other attempted moves 
+	// Arg 5 & Arg 7: the actual sequences of moves that were accepted and the corresponding lists of other attempted moves 
 	// Arg 6 & Arg 8: working space for tracking possible sequences of moves and the alternatives at each level
 	// Arg 9: current depth
 	// Arg 10: maximum depth (i.e., if you get that far without conflicts, you've found a solution)
@@ -2108,3 +2221,4 @@ int main(int argc, char* argv[])
 	cout << "Solutions founds: " << nSolutions << endl;
 	return 0;
 }
+

@@ -16,6 +16,8 @@
 
 #include "hc.h"
 //#include "gameLogic.h"
+enum MoveFlag { E_NONE, E_BLOCKED, E_CHECKED, E_PAWN_CAPTURE};
+
 void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* possState, bool whiteMove, /*uint16_t* moveHistory, */
 				uint16_t* possHistory, /*VecSetMove& failedMoves,*/ uint16_t** levels, int depth/*, int maxdepth*/);
 
@@ -40,17 +42,17 @@ long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
 long long diagonalDests[64]; // used for bishop, king, and queen
 long long knightDests[64]; // used only for knights
 //	globalState
-vector<uint16_t> globalState;
+//vector<uint16_t> globalState;
 
 #define MAX_BRANCH 25
-#define MAX_DEPTH 6
+#define MAX_DEPTH 2
 #define MAX_CHILDREN 64
 //#define DEBUG
 //#define ONESOL
 
 
 int nSolutions=0;
-//#define PRINT_SOLUTIONS 
+#define PRINT_SOLUTIONS 
 
 // Use sets of moves to keep track of the list of all illegal moves that were tried before
 // a legal move was made.  Sets make sense here because it doesn't matter what order the moves
@@ -126,6 +128,20 @@ string disp16(uint16_t* x, int max)
   return os.str();
 }
 
+// Given a chess square of the form a1-h8, return the integer 0-63 that corresponds. a8 is 0, h1 is 63
+uint16_t chessSquareToInt(const string& square)
+{
+  assert (square.size() == 2);
+  char file = square[0];
+  assert (file >= 'a');
+  assert (file <= 'h');
+  int fileId = (int)(file - 'a');
+  int rankMinus1 = 7 - (int)(square[1] - '1');
+  assert (rankMinus1 >= 0);
+  assert (rankMinus1 < 8);
+  return rankMinus1 * 8 + fileId;
+}
+
 // Use the src and destination squares together with the appropriate flags to encode an attemptable move
 // Bits 0-5 are destination square, 6-11 are souurce square, 13 denotes pawn capture, 14 means this move
 // would leave the player who made it in check, 15 means the move is attemptable but blocked
@@ -135,6 +151,24 @@ uint16_t encodeMove(uint16_t from, uint16_t to, bool blocked, bool checked, bool
   result = (blocked << 15) | (checked << 14) | (pawntry << 13) | (from << 6) | to ;
   return result;
 }
+
+uint16_t encodeMove(const string& moveString, MoveFlag blocked, MoveFlag checked, MoveFlag pawnCapture) 
+{
+  bool blockedFlag = (blocked == E_BLOCKED);
+  bool checkedFlag = (checked == E_CHECKED);
+  bool pawnCaptureFlag = (pawnCapture == E_PAWN_CAPTURE);
+  string startSquareStr = moveString.substr(1,2);
+  string endSquareStr = moveString.substr(4,2);
+  uint16_t startSquare = chessSquareToInt(startSquareStr);
+  uint16_t endSquare = chessSquareToInt(endSquareStr);
+  return encodeMove(startSquare, endSquare, blockedFlag, checkedFlag, pawnCaptureFlag);
+}
+
+uint16_t encodeMove(const string& moveString)
+{
+  return encodeMove(moveString, E_NONE, E_NONE, E_NONE);
+}
+
 
 // Return the destination square of an encoded Move
 uint16_t extractDestination(const uint16_t move)
@@ -309,6 +343,10 @@ string sampleState(int test)
 
 }
 
+string getStartState()
+{
+  return sampleState(0);
+}
 void copyState(uint16_t* oldState, uint16_t* newState)
 {
   memcpy(newState,oldState,sizeof(uint16_t)*16);
@@ -1709,9 +1747,9 @@ void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, ui
 }
 
 // For testing purposes
-int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, vector<set <uint16_t> > & failedMoves)
+int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves)
 {
-  static int testNumber = 1;
+  static int testNumber = 3;
   switch (testNumber) {
   case 0:
     moveHistory[0] = encodeMove(52,36,false,false);  // white king pawn advances two
@@ -1733,6 +1771,88 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     moveHistory[7] = encodeMove(22,31,false,false,true); // black captures white queen with g pawn
     moveHistory[8] = encodeMove(52,31,false,false); // white captures pawn that captured queen and puts black in checkmate
     return 9;
+  case 2:  // White checkmates black in 10 moves
+    moveHistory[0] = encodeMove(51,35,false,false); // white queen pawn advances two
+    moveHistory[1] = encodeMove(8,24,false,false); // black a pawn advances two 
+    moveHistory[2] = encodeMove(58,30,false,false); // white develops bishop 
+    moveHistory[3] = encodeMove(9,17,false,false); // black advances b pawn one
+    moveHistory[4] = encodeMove(57,42,false,false); // white knight to c3
+    failedMoves[4].insert( encodeMove(30,3,true,false) ); // blocked attack on black queen
+    moveHistory[5] = encodeMove(10,26,false,false); // black pawn to c5
+    moveHistory[6] = encodeMove(35,27,false,false); // d5
+    failedMoves[6].insert( encodeMove(30,3,true,false) ); // repeat blocked attack on black queen
+    moveHistory[7] = encodeMove(1,16,false,false); // // black knight to a6
+    moveHistory[8] = encodeMove(27,19,false,false); // d6 (white pushing the pawn)
+    moveHistory[9] = encodeMove(13,21,false,false); // f6 black pawn attacks bishop
+    moveHistory[10] = encodeMove(52,36,false,false); // e4
+    moveHistory[11] = encodeMove(21,30,false,false,true); // black pawn takes bishop
+    moveHistory[12] = encodeMove(61,34,false,false); // Bc4 white develops other bishop
+    moveHistory[13] = encodeMove(12,19,false,false,true); // ed pawn capture exposes king
+    moveHistory[14] = encodeMove(59,27,false,false); // Qd5 developing queen
+    moveHistory[15] = encodeMove(3,10,false,false); // Qc7 black's queen moves out
+    moveHistory[16] = encodeMove(27,13,false,false); // white queen attacks king, puts black in check
+    moveHistory[17] = encodeMove(4,3,false,false); // black king finally moves to d8
+    failedMoves[17].insert( encodeMove(14,22,false,true) ); // moving pawn (to attempt block) leaves king in check
+    failedMoves[17].insert( encodeMove(4,13,false,true) ); // capturing queen would leave black king in check (from the bishop) 
+    failedMoves[17].insert( encodeMove(4,12,false,true) ); // this move tests whether the checking piece is a queen or a bishop 
+    moveHistory[18] = encodeMove(13,5,false,false); // Qxf8++ white takes bishop and wins.
+    return 19;
+  case 3:
+    // Move 1
+    moveHistory[0] = encodeMove("Pg2:g4");
+    moveHistory[1] = encodeMove("Pg7:g5");
+    // Move 2
+    moveHistory[2] = encodeMove("Pd2:d3");
+    moveHistory[3] = encodeMove("Bf8:g7");
+    // Move 3
+    moveHistory[4] = encodeMove("Pf2:f4");
+    moveHistory[5] = encodeMove("Pg5xf4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 4
+    moveHistory[6] = encodeMove("Bc1xf4");
+    failedMoves[7].insert( encodeMove("Bg7:a1",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[7] = encodeMove("Bg7xb2");
+    // Move 5
+    moveHistory[8] = encodeMove("Bf4:e5");
+    moveHistory[9] = encodeMove("Bb2xa1");
+    // Move 6
+    moveHistory[10] = encodeMove("Be5xa1");
+    moveHistory[11] = encodeMove("Pf7:f6");
+    // Move 7
+    moveHistory[12] = encodeMove("Pg4:g5");
+    moveHistory[13] = encodeMove("Ke8:f7");
+    // Move 8
+    moveHistory[14] = encodeMove("Pe2:e4");
+    moveHistory[15] = encodeMove("Ph7:h6");
+    // Move 9
+    moveHistory[16] = encodeMove("Qd1:h5+");
+    failedMoves[17].insert( encodeMove("Kf7:g6",E_NONE,E_CHECKED, E_NONE) ); 
+    moveHistory[17] = encodeMove("Kf7:g7");
+    // Move 10
+    moveHistory[18] = encodeMove("Bf1:h3");
+    moveHistory[19] = encodeMove("Kg7:h7");
+    // Move 11
+    moveHistory[20] = encodeMove("Bh3:f5");
+    moveHistory[21] = encodeMove("Kh7:g7");
+    // Move 12
+    moveHistory[22] = encodeMove("Qh5:g6");
+    moveHistory[23] = encodeMove("Kg7:f8");
+    // Move 13
+    moveHistory[24] = encodeMove("Qg6:h7");
+    moveHistory[25] = encodeMove("Pe7:e6");
+    // Move 14 
+    moveHistory[26] = encodeMove("Qh7xh8");
+    moveHistory[27] = encodeMove("Pe6xf5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 15 
+    moveHistory[28] = encodeMove("Pg5xf6", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    failedMoves[29].insert( encodeMove("Ng8xf6",E_NONE , E_CHECKED, E_NONE) ); 
+    moveHistory[29] = encodeMove("Kf8:f7");
+    // Move 16
+    moveHistory[30] = encodeMove("Qh8:g7");
+    moveHistory[31] = encodeMove("Kf7:e6");
+    // Move 17 
+    moveHistory[32] = encodeMove("Qg7xg8");
+    moveHistory[33] = encodeMove("Qd8xg8");
+    return 34;
   }
 }
 
@@ -1842,16 +1962,18 @@ void generateInformationSet(bool whitePerspective, uint16_t* trueState, uint16_t
 	//searchEngineProxy.incState();
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
-	uint16_t destructibleState[16];
-//TODO UNCOMMENT        copyState(globalState,destructibleState);
-        for (int i = 0; i < depth; i++) {
-	  if (i%2 == 0) cout << (i/2+1) << ". ";
-	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
-	  applyMove(destructibleState,possHistory[i]);
-	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
-        }
-        cout << endl;
-        printState(destructibleState);
+	//uint16_t destructibleState[16];
+//TODO UNCOMMENT        
+	//uint16_t gs = globalState[0];
+	////copyState(globalState[0],destructibleState);
+        //for (int i = 0; i < depth; i++) {
+	//  if (i%2 == 0) cout << (i/2+1) << ". ";
+	//  cout << decodeMove(destructibleState,possHistory[i]) << " ";
+	//  applyMove(destructibleState,possHistory[i]);
+	//  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+        //}
+        //cout << endl;
+        //printState(destructibleState);
 #endif
 	return;
   }
@@ -2103,43 +2225,44 @@ public:
     } */
 };
 
+void processSolution(uint16_t* possHistory, int depth)
+{
+	uint16_t destructibleState[16];
+	string startingBoardString = getStartState();
+	fillBoard(destructibleState,startingBoardString);
+        //copyState(&globalState[0],destructibleState);
+        for (int i = 0; i < depth; i++) {
+	  if (i%2 == 0) cout << (i/2+1) << ". ";
+	  CkPrintf("%s ", decodeMove(destructibleState,possHistory[i]).c_str()) ;
+	  applyMove(destructibleState,possHistory[i]);
+	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+        }
+	CkPrintf("\n");
+}
 //class HcCore: public AppCore {
 //  public:
 //    HcCore(){
 //    }
 
    // inline void getStartState(NodeQueue *qs){
-	void createInitialChildren(Solver* solver) {
-
-        // Ask for enough memory for the initial state;
-         //HcState *startState = (HcState *)qs->registerState(sizeof(HcState),1);
-         //HcState *startState = (HcState *)qs->registerRootState(sizeof(HcState));
-         HcState *startState = (HcState *)solver->registerRootState(sizeof(HcState),0,1);
-				 
-		uint16_t state[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-	
-//		uint16_t stateCopy[16];
- 		string s = sampleState(0);
-        fillBoard(state,s);
-  //      copyState(state,stateCopy);
-    //    copyState(state,globalState);
-
-		 startState->moveWhite = true;
-		 startState->possHistory=NULL;
-		 startState->k = 0;
-		 copy(&state[0],&state[16],&startState->board[0]);
-		 copy(&state[0],&state[16],&startState->trueState[0]);
-	//	 startState->board 
-		 //qs->push(startState);
-		 solver->process(startState);
-
-    }
+void createInitialChildren(Solver* solver) {
+    // Ask for enough memory for the initial state;
+    HcState *startState = (HcState *)solver->registerRootState(sizeof(HcState),0,1);
+    uint16_t state[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    string s = sampleState(0);
+    fillBoard(state,s);
+    startState->moveWhite = true;
+    startState->possHistory = NULL;
+    startState->k = 0;
+    copy(&state[0],&state[16],&startState->board[0]);
+    copy(&state[0],&state[16],&startState->trueState[0]);
+    solver->process(startState);
+}
 
     //inline void expand(State *curState, NodeQueue *qs){
-    void createChildren(StateBase* curState, Solver* solver, bool parallel) {
-      HcState *parent = ((HcState *)curState);
-      int childnum = 0;
+void createChildren(StateBase* curState, Solver* solver, bool parallel) {
+    HcState *parent = ((HcState *)curState);
+    int childnum = 0;
 	  int parentk = parent->k;
 
 	  int depth = parent->k;
@@ -2160,10 +2283,12 @@ public:
       //if(parentk < sequential_threshold){
 	if (parallel) {
 
+	  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
+	  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 			  //Check if it is a solution 
 	if(parentk == maxdepth )
 	{
-
+	processSolution(possHistory, maxdepth);
 	nSolutions++;
 	solver->reportSolution(); // MDR++
 //	searchEngineProxy.incState();
@@ -2185,20 +2310,13 @@ public:
 
 	//TODO
 	  // Need to check that the messages match
-  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
-  if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
+  //if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
+  //if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
   if (depth == maxdepth) { // Then we have found a solution
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
-	uint16_t destructibleState[16];
-   //TODO UNCOMMENT     copyState(globalState,destructibleState);
-        for (int i = 0; i < depth; i++) {
-	  if (i%2 == 0) cout << (i/2+1) << ". ";
-	  CkPrintf("%s ", decodeMove(destructibleState,possHistory[i])) ;
-	  applyMove(destructibleState,possHistory[i]);
-	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
-        }
+	processSolution(possHistory, depth);
        // Ckut << endl;
       //  printState(destructibleState);
 #endif
@@ -2349,16 +2467,16 @@ void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* poss
 	//solver->
 	// Right now, just display the solution; eventually we'll need to do something else with it
 #ifdef PRINT_SOLUTIONS
-	uint16_t destructibleState[16];
-        copyState(globalState,destructibleState);
-        for (int i = 0; i < depth; i++) {
-	  if (i%2 == 0) cout << (i/2+1) << ". ";
-	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
-	  applyMove(destructibleState,possHistory[i]);
-	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
-        }
-        cout << endl;
-        printState(destructibleState);
+	//uint16_t destructibleState[16];
+        //copyState(globalState,destructibleState);
+        //for (int i = 0; i < depth; i++) {
+	//  if (i%2 == 0) cout << (i/2+1) << ". ";
+	//  cout << decodeMove(destructibleState,possHistory[i]) << " ";
+	//  applyMove(destructibleState,possHistory[i]);
+	//  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+        //}
+        //cout << endl;
+        //printState(destructibleState);
 #endif
 	return;
   }
@@ -2429,25 +2547,6 @@ void recursive_hc(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* poss
   }
 }
 
-	//Is it used ??
-//    inline bool isGoal(State *s){
-//
-//#ifndef ONESOL
-//			return false;
-//#endif
-//		CkPrintf("Goal reached \n");	
-//      HcState *state = (HcState *)s;
-//      if(state->k == MAX_DEPTH )  
-//          return true;
-//      else
-//        return false;
-
-//    }
-//    void unpack(NodeQueue *q, State *ss, size_t size){
-//      q->embed(ss, size);
-//    }
-//
-//};
 
 Hc::Hc( CkArgMsg* msg )
 {
@@ -2510,7 +2609,8 @@ Hc::Hc( CkArgMsg* msg )
         int nMoves = 0;
 
 		
-	int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,MAX_DEPTH);
+	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,MAX_DEPTH);
+	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 
 	maxdepth = nExecutedMoves;
 		cout << nExecutedMoves << endl;

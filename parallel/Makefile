@@ -1,10 +1,11 @@
 #OPTS = -O2 -DOPTIMIZE -DUSE_CMIPOOL -DFIRST_SOLUTION -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
 #OPTS = -O2 -DOPTIMIZE -DUSE_CMIPOOL -DUSE_PRIORITIES #-g #-DBOUNDCHECK #-DSE_DEBUG #-DMEMCHECK 
-OPTS = 
+OPTS = -O2 -g
 
 # Fill in the path to CHARMC here
 #CHARMC_PATH=~/charmgit/charm/bin
-CHARMC_PATH=~/work/CHARM/charm/bin
+#CHARMC_PATH=~/work/CHARM/charm/bin
+CHARMC_PATH=/home/mdrichar/software/charm-6.4.0/bin
 CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 
 ####################################

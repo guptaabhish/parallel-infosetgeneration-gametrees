@@ -11,7 +11,7 @@ mainmodule hc
 	readonly long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
 	readonly long long diagonalDests[64]; // used for bishop, king, and queen
 	readonly long long knightDests[64]; // used only for knights
-	readonly vector<uint16_t> globalState;
+	//readonly vector<uint16_t> globalState;
 
     mainchare Hc{
       entry Hc(CkArgMsg *m);
