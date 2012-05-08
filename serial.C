@@ -306,6 +306,10 @@ string sampleState(int test)
 
 }
 
+string getStartState()
+{
+  return sampleState(0);
+}
 void copyState(uint16_t* oldState, uint16_t* newState)
 {
   memcpy(newState,oldState,sizeof(uint16_t)*16);
@@ -356,6 +360,22 @@ void printPiece(uint16_t val)
 	else exit(0);
 	printf(" ");
 
+}
+
+void processSolution(uint16_t* possHistory, int depth)
+{
+	//printf("depth: %d\n", depth);
+	uint16_t destructibleState[16];
+	string startingBoardString = getStartState();
+	fillBoard(destructibleState,startingBoardString);
+        //copyState(&globalState[0],destructibleState);
+        for (int i = 0; i < depth; i++) {
+	  if (i%2 == 0) cout << (i/2+1) << ". ";
+	  printf("%s ", decodeMove(destructibleState,possHistory[i]).c_str()) ;
+	  applyMove(destructibleState,possHistory[i]);
+	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+        }
+	printf("\n");
 }
 
 void printState(uint16_t *arr)
@@ -1802,6 +1822,25 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     moveHistory[32] = encodeMove("Qg7xg8");
     moveHistory[33] = encodeMove("Qd8xg8");
     return 34;
+  case 4:
+    // Move 1
+    moveHistory[0] = encodeMove("Pg2:g4");
+    moveHistory[1] = encodeMove("Pg7:g5");
+    // Move 2
+    moveHistory[2] = encodeMove("Pd2:d3");
+    moveHistory[3] = encodeMove("Bf8:g7");
+    // Move 3
+    moveHistory[4] = encodeMove("Pf2:f4");
+    moveHistory[5] = encodeMove("Pg5xf4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    return 6;
+  case 5:
+    // Move 1
+    moveHistory[0] = encodeMove("Pf2:f4");
+    moveHistory[1] = encodeMove("Pg7:g5");
+    // Move 2
+    moveHistory[2] = encodeMove("Pg2:g4");
+    moveHistory[3] = encodeMove("Pg5xf4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    return 4;
   }
 }
 
@@ -1903,9 +1942,6 @@ bool foundMatchingMove(const uint16_t move, uint16_t* moveList, int nMoves)
 void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint16_t* possState, bool whiteMove, /*uint16_t* moveHistory, */
 				uint16_t* possHistory, /*VecSetMove& failedMoves,*/ uint16_t** levels, int depth/*, int maxdepth*/)
 {
-//numStates++;
-//if(numStates%1000==0) printf("%d\n",numStates);
-  // Need to check that the messages match
   if (!samePawnTries(trueState, possState, whiteMove)) {
 	//PRUNE
 	return;  
@@ -1916,20 +1952,25 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
   }
 
   if (depth == maxdepth) { // Then we have found a solution
-	nSolutions++;
+//	nSolutions++;
 	// Right now, just display the solution; eventually we'll need to do something else with it
+//#ifdef PRINT_SOLUTIONS
+//	uint16_t destructibleState[16];
+//        copyState(globalState,destructibleState);
+//        for (int i = 0; i < depth; i++) {
+//	  if (i%2 == 0) cout << (i/2+1) << ". ";
+//	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
+//	  applyMove(destructibleState,possHistory[i]);
+//	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
+//        }
+//        cout << endl;
+//        printState(destructibleState);
+//#endif
 #ifdef PRINT_SOLUTIONS
-	uint16_t destructibleState[16];
-        copyState(globalState,destructibleState);
-        for (int i = 0; i < depth; i++) {
-	  if (i%2 == 0) cout << (i/2+1) << ". ";
-	  cout << decodeMove(destructibleState,possHistory[i]) << " ";
-	  applyMove(destructibleState,possHistory[i]);
-	  //cout << (i/2+1) << (i%2 ? "B. " : "W. ") << decodeMove(possHistory[i]) << " ";
-        }
-        cout << endl;
-        printState(destructibleState);
+        processSolution(possHistory, maxdepth);
 #endif
+	nSolutions++;
+	//solver->reportSolution();
 	// FOUND SOLUTION
 	return;
   }

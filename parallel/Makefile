@@ -17,7 +17,7 @@ CHARMC=$(CHARMC_PATH)/charmc $(OPTS)
 all: hc 
 
 hc: hc.o
-	$(CHARMC) -language charm++  hc.o -o hc -module searchEngine 
+	$(CHARMC) -language charm++  hc.o -o hc -module searchEngine  -memory paranoid
 
 #hc: searchEngine.o hc.o
 #	$(CHARMC) -language charm++  hc.o searchEngine.o -o hc -tracemode projections #-memory paranoid
