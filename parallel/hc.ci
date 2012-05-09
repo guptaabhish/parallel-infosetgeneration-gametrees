@@ -4,6 +4,7 @@ mainmodule hc
 
 	readonly bool whitePerspective;
 	readonly int grainsize;
+	readonly int testNumberId;
 //    readonly vector< vector<uint16_t> > trueState;
     readonly uint16_t moveHistory[150];
 	readonly int maxdepth;

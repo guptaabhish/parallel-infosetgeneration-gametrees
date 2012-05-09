@@ -32,6 +32,7 @@ uint16_t trueState1[16];
 
 bool whitePerspective = false;
 int grainsize;
+int testNumberId;
 
 //vector< vector<uint16_t> > trueState;
 
@@ -1750,7 +1751,7 @@ void processMoveHistory(uint16_t* state, vector<set <uint16_t> > failedMoves, ui
 // For testing purposes
 int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, VecSetMove& failedMoves)
 {
-  static int testNumber = 3;
+  static int testNumber = testNumberId;
   switch (testNumber) {
   case 0:
     moveHistory[0] = encodeMove(52,36,false,false);  // white king pawn advances two
@@ -1854,7 +1855,183 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     moveHistory[32] = encodeMove("Qg7xg8");
     moveHistory[33] = encodeMove("Qd8xg8");
     return 34;
+  // Virgil-David 1969
   case 4:
+    // Move 1
+    moveHistory[0] = encodeMove("Ph2:h4");
+    moveHistory[1] = encodeMove("Pd7:d5");
+    // Move 2
+    moveHistory[2] = encodeMove("Pa2:a4");
+    moveHistory[3] = encodeMove("Pd5:d4");
+    // Move 3
+    moveHistory[4] = encodeMove("Ra1:a3");
+    moveHistory[5] = encodeMove("Pe7:e5");
+    // Move 4
+    moveHistory[6] = encodeMove("Ra3:h3");
+    moveHistory[7] = encodeMove("Qd8:d7");
+    // Move 5
+    moveHistory[8] = encodeMove("Ng1:f3");
+    moveHistory[9] = encodeMove("Pc7:c5");
+    // Move 6
+    moveHistory[10] = encodeMove("Pg2:g4");
+    moveHistory[11] = encodeMove("Nb8:c6");
+    // Move 7
+    moveHistory[12] = encodeMove("Ph4:h5");
+    moveHistory[13] = encodeMove("Pb7:b6");
+    // Move 8
+    moveHistory[14] = encodeMove("Pd2:d3");
+    moveHistory[15] = encodeMove("Bc8:b7");
+    // Move 9
+    moveHistory[16] = encodeMove("Ph5:h6");
+    moveHistory[17] = encodeMove("Ng8xh6");
+    // Move 10 
+    moveHistory[18] = encodeMove("Bc1xh6");
+    moveHistory[19] = encodeMove("Pg7xh6", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 11 
+    moveHistory[20] = encodeMove("Rh3xh6");
+    moveHistory[21] = encodeMove("Bf8xh6");
+    // Move 12 
+    moveHistory[22] = encodeMove("Rh1xh6");
+    return 23;
+  
+  case 5: 
+    // Move 1
+    moveHistory[0] = encodeMove("Pg2:g3");
+    moveHistory[1] = encodeMove("Pd7:d6");
+    // Move 2
+    moveHistory[2] = encodeMove("Bf1:g2");
+    moveHistory[3] = encodeMove("Pf7:f6");
+    // Move 3
+    moveHistory[4] = encodeMove("Pa2:a3");
+    moveHistory[5] = encodeMove("Ke8:d7");
+    // Move 4
+    moveHistory[6] = encodeMove("Pf2:f3");
+    moveHistory[7] = encodeMove("Pc7:c6");
+    // Move 5
+    moveHistory[8] = encodeMove("Pg3:g4");
+    moveHistory[9] = encodeMove("Pg7:g6");
+    // Move 6
+    moveHistory[10] = encodeMove("Pc2:c3");
+    moveHistory[11] = encodeMove("Qd8:c7");
+    // Move 7
+    moveHistory[12] = encodeMove("Pd2:d3");
+    moveHistory[13] = encodeMove("Ph7:h6");
+    // Move 8
+    moveHistory[14] = encodeMove("Pf3:f4");
+    moveHistory[15] = encodeMove("Pa7:a6");
+    // Move 9
+    moveHistory[16] = encodeMove("Pe2:e3");
+    moveHistory[17] = encodeMove("Pa6:a5");
+    // Move 10 
+    moveHistory[18] = encodeMove("Pf4:f5");
+    moveHistory[19] = encodeMove("Pg6xf5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 11 
+    moveHistory[20] = encodeMove("Pg4xf5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    failedMoves[21].insert( encodeMove("Pf7:f6",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[21] = encodeMove("Pe7:e6");
+    // Move 12 
+    moveHistory[22] = encodeMove("Pf5xe6+", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    moveHistory[23] = encodeMove("Kd7xe6");
+    // Move 13 
+    moveHistory[24] = encodeMove("Pb2:b3");
+    moveHistory[25] = encodeMove("Ke6:d7");
+    // Move 14 
+    moveHistory[26] = encodeMove("Pe3:e4");
+    moveHistory[27] = encodeMove("Bf8:g7");
+    // Move 15 
+    moveHistory[28] = encodeMove("Pb3:b4");
+    moveHistory[29] = encodeMove("Pa5xb4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 16 
+    moveHistory[30] = encodeMove("Pa3xb4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    moveHistory[31] = encodeMove("Kd7:d8");
+    // Move 17 
+    moveHistory[32] = encodeMove("Ng1:e2");
+    moveHistory[33] = encodeMove("Pf6:f5");
+    // Move 18 
+    moveHistory[34] = encodeMove("Pe4xf5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    moveHistory[35] = encodeMove("Bc8xf5");
+    // Move 19 
+    moveHistory[36] = encodeMove("Bc1:a3");
+    moveHistory[37] = encodeMove("Bf5:c8");
+    // Move 20 
+    moveHistory[38] = encodeMove("Ph2:h3");
+    failedMoves[39].insert( encodeMove("Ra8:a1",E_BLOCKED, E_NONE, E_NONE) ); 
+    failedMoves[39].insert( encodeMove("Ra8:a2",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[39] = encodeMove("Ra8:a3");
+    // Move 21 
+    moveHistory[40] = encodeMove("Nb1xa3");
+    moveHistory[41] = encodeMove("Bg7:e5");
+    // Move 22 
+    moveHistory[42] = encodeMove("Qd1:b1");
+    moveHistory[43] = encodeMove("Ng8:e7");
+    // Move 23 
+    moveHistory[44] = encodeMove("Pc3:c4");
+    moveHistory[45] = encodeMove("Ph6:h5");
+    // Move 24 
+    moveHistory[46] = encodeMove("Pg2:f1");
+    moveHistory[47] = encodeMove("Ph5xh4");
+    // Move 25 
+    moveHistory[50] = encodeMove("Pb4:b5");
+    moveHistory[51] = encodeMove("Pc6xb5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    // Move 26 
+    moveHistory[48] = encodeMove("Pc4xb5", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    failedMoves[49].insert( encodeMove("Pb7:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[49] = encodeMove("Be5:c3+");
+    // Move 27 
+    moveHistory[52] = encodeMove("Ne2xc3");
+    moveHistory[53] = encodeMove("Qc7xc3+");
+    // Move 28 
+    moveHistory[54] = encodeMove("Ke1:e2");
+    moveHistory[55] = encodeMove("Qc3:c7");
+    // Move 29 
+    moveHistory[56] = encodeMove("Qb1:c2");
+    failedMoves[57].insert( encodeMove("Pb7:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[57] = encodeMove("Pb7:b6");
+    // Move 30 
+    moveHistory[58] = encodeMove("Pd3:d4");
+    moveHistory[59] = encodeMove("Rh8:e8");
+    // Move 31 
+    moveHistory[60] = encodeMove("Bf1:g2");
+    failedMoves[61].insert( encodeMove("Pb6:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[61] = encodeMove("Re8:g8");
+    // Move 32 
+    moveHistory[62] = encodeMove("Ra1:b1");
+    moveHistory[63] = encodeMove("Rg8:g4");
+    // Move 33 
+    moveHistory[64] = encodeMove("Ph3xg4", E_NONE, E_NONE, E_PAWN_CAPTURE);
+    moveHistory[65] = encodeMove("Bc8xg4");
+    // Move 34 
+    moveHistory[66] = encodeMove("Ke2:e1");
+    moveHistory[67] = encodeMove("Bg4:c8");
+    // Move 35 
+    moveHistory[68] = encodeMove("Rh1xh4");
+    failedMoves[69].insert( encodeMove("Pb6:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[69] = encodeMove("Bc8:b7");
+    // Move 36 
+    moveHistory[70] = encodeMove("Rh4:h7");
+    failedMoves[71].insert( encodeMove("Pb6:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[71] = encodeMove("Ne7:c8");
+    // Move 37 
+    moveHistory[72] = encodeMove("Qc2:g6");
+    failedMoves[73].insert( encodeMove("Pb6:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[73] = encodeMove("Nc8:a7");
+    // Move 38 
+    moveHistory[74] = encodeMove("Rh7:g7");
+    moveHistory[75] = encodeMove("Na7xb5");
+    // Move 39 
+    moveHistory[76] = encodeMove("Na3xb5");
+    failedMoves[73].insert( encodeMove("Pb6:b5",E_BLOCKED, E_NONE, E_NONE) ); 
+    moveHistory[77] = encodeMove("Bb7:c8");
+    // Move 40 
+    moveHistory[78] = encodeMove("Qg6:e6");
+    moveHistory[79] = encodeMove("Nb8:a6");
+    // Move 41 
+    moveHistory[80] = encodeMove("Bg2:c6");
+    moveHistory[81] = encodeMove("Na6:c5");
+    // Move 42 
+    moveHistory[82] = encodeMove("Rg7:g8#");
+    return 83;
+  case 6:
     // Move 1
     moveHistory[0] = encodeMove("Pg2:g4");
     moveHistory[1] = encodeMove("Pg7:g5");
@@ -1865,7 +2042,7 @@ int generateCannedMoves(uint16_t* state, bool whiteMove, uint16_t* moveHistory, 
     moveHistory[4] = encodeMove("Pf2:f4");
     moveHistory[5] = encodeMove("Pg5xf4", E_NONE, E_NONE, E_PAWN_CAPTURE);
     return 6;
-  case 5:
+  case 7:
     // Move 1
     moveHistory[0] = encodeMove("Pf2:f4");
     moveHistory[1] = encodeMove("Pg7:g5");
@@ -2513,16 +2690,19 @@ Hc::Hc( CkArgMsg* msg )
     // Randomly generate a sequence of moves OR produce a carefully crafted example sequence
     int nMoves = 0;
     //int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,15);
-    int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
-    int grainsizeTmp = 8;
-    if(msg->argc < 2) 
+    if(msg->argc < 3) 
     {
-        CkPrintf("Usage: hc <nMoves> [grainsizeTmp]\n"); 
+        CkPrintf("Usage: hc <gameId> <nMoves> [grainsizeTmp]\n"); 
         CkExit();
     }
-    maxdepth = atoi(msg->argv[1]);
-    if (msg->argc > 2) {
-	grainsizeTmp = atoi(msg->argv[2]);
+    testNumberId = atoi(msg->argv[1]);
+    CkAssert(testNumberId > 0);
+    CkAssert(testNumberId < 8);
+    int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
+    int grainsizeTmp = 8;
+    maxdepth = atoi(msg->argv[2]);
+    if (msg->argc > 3) {
+	grainsizeTmp = atoi(msg->argv[3]);
     }
     delete msg;
     CkAssert(maxdepth > 0);
