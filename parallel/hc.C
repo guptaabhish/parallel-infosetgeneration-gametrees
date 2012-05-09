@@ -31,6 +31,7 @@ uint16_t trueState1[16];
 
 
 bool whitePerspective = false;
+int grainsize;
 
 //vector< vector<uint16_t> > trueState;
 
@@ -2513,15 +2514,24 @@ Hc::Hc( CkArgMsg* msg )
     int nMoves = 0;
     //int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,15);
     int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
-    if(msg->argc !=2) 
+    int grainsizeTmp = 8;
+    if(msg->argc < 2) 
     {
-        CkPrintf("Usage: hc <nMoves>\n"); 
+        CkPrintf("Usage: hc <nMoves> [grainsizeTmp]\n"); 
         CkExit();
     }
     maxdepth = atoi(msg->argv[1]);
+    if (msg->argc > 2) {
+	grainsizeTmp = atoi(msg->argv[2]);
+    }
     delete msg;
     CkAssert(maxdepth > 0);
     CkAssert(maxdepth <= nExecutedMoves);
+    CkAssert(grainsizeTmp > 0);
+    if (grainsizeTmp > maxdepth) {
+        grainsizeTmp = maxdepth;
+    }
+    grainsize = grainsizeTmp;
     //maxdepth = nExecutedMoves;
     cout << nExecutedMoves << endl;
     processMoveHistory(stateCopy,failedMoves,moveHistory,nExecutedMoves);
@@ -2532,8 +2542,9 @@ Hc::Hc( CkArgMsg* msg )
 //Search Engine Option
 int parallelLevel()
 {
-    static const int initial_grainsize = 8;
-    return initial_grainsize;
+    return grainsize;
+    //static const int initial_grainsize = 8;
+    //return initial_grainsize;
 }
 
 int searchDepthLimit()

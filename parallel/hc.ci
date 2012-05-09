@@ -3,6 +3,7 @@ mainmodule hc
     extern module searchEngine;
 
 	readonly bool whitePerspective;
+	readonly int grainsize;
 //    readonly vector< vector<uint16_t> > trueState;
     readonly uint16_t moveHistory[150];
 	readonly int maxdepth;
