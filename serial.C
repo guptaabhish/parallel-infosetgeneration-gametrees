@@ -14,7 +14,7 @@ using namespace std;
 bool whitePerspective=false;
 int nSolutions;
 long long numStates=0;
-//#define PRINT_SOLUTIONS 
+#define PRINT_SOLUTIONS 
 
 // Use sets of moves to keep track of the list of all illegal moves that were tried before
 // a legal move was made.  Sets make sense here because it doesn't matter what order the moves
@@ -1816,7 +1816,7 @@ void generateInformationSet(/*bool whitePerspective,*/ uint16_t* trueState, uint
 //numStates++;
 //if(numStates%1000==0) printf("%d\n",numStates);
   // Need to check that the messages match
-  if (!samePawnTries(trueState, possState, whiteMove)) return;  // has not been implemented
+  if (!samePawnTries(trueState, possState, whiteMove)) return;  
   if (!sameCheckStatus(trueState, possState, whiteMove)) return; 
 
   if (depth == maxdepth) { // Then we have found a solution
@@ -2072,7 +2072,7 @@ int main(int argc, char* argv[])
 
 	// Randomly generate a sequence of moves OR produce a carefully crafted example sequence
         int nMoves = 0;
-	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,8);
+	//int nExecutedMoves = generateRandomMoves(state,true,moveHistory,failedMoves,moveList,0,4);AA
 	int nExecutedMoves = generateCannedMoves(state,true,moveHistory,failedMoves);
 	// Display the actual sequence of moves (for testing/debugging purposes)
         cout << nExecutedMoves << endl;
