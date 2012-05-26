@@ -5,15 +5,17 @@ mainmodule hc
 	readonly bool whitePerspective;
 	readonly int grainsize;
 	readonly int testNumberId;
-//    readonly vector< vector<uint16_t> > trueState;
-    readonly uint16_t moveHistory[150];
 	readonly int maxdepth;
-    readonly vector< set<uint16_t> > failedMoves;
+
+        readonly vector< vector<uint16_t> > trueStates;
+        readonly uint16_t moveHistory[150];
+        readonly vector< set<uint16_t> > trueFailedMoves;
+        readonly vector< set<uint16_t> > truePawnTries;
 
 	readonly long long rankFileDests[64]; // Rook-like moves; used for rook, king, queen
 	readonly long long diagonalDests[64]; // used for bishop, king, and queen
 	readonly long long knightDests[64]; // used only for knights
-	//readonly vector<uint16_t> globalState;
+	//readonly vector<uint16_t> trueStates;
 
     mainchare Hc{
       entry Hc(CkArgMsg *m);
