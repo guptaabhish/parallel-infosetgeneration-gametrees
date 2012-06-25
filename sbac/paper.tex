@@ -96,21 +96,31 @@
 
 \begin{abstract}
 Information Set Generation is the identification of the set of paths in an imperfect information game tree that are
-consistent with a player's observations.  The ability to reason about the possible game history is crucial to the
-performance of game playing agents.  In this work, we discuss the problem of information set generation in the context
+consistent with a player's observations.  The ability to reason about the possible game history is critical to the
+performance of game playing agents.  In this work, we address the parallelization of information set generation in the context
 of kriegspiel (partially observable chess).  We implement the algorithm on top of a general purpose combinatorial search
 engine and discuss its performance under different load balancing strategies and with different grainsize parameters.
-Our results suggest that our algorithm can be efficiently parallelized.  
+We achieve speedups of over 500 on 1024 processors, far exceeding previous scalability results for game tree search applications.
 \end{abstract}
 
 \Section{Introduction}
-In imperfect information games, players do not have access to full knowledge of the world. Examples of imperfect
-information include hidden cards in Poker~\cite{billings02challenge} or Bridge~\cite{ginsberg96partition}, hidden tiles
-in Scrabble~\cite{richards07opponent}, or hidden pieces in Stratego or Kriegspiel (partially observable
-chess)~\cite{li94chess}. The game tree nodes that are indistinguishable to a player because they differ only in the
-information that is hidden to the player by rule are called that player's {\em information set.}  The ability to
-estimate the value of the possible states and to reason about the probability distribution over those states is crucial
-to playing imperfect information games well. 
+In imperfect information games, players do not have access to full knowledge of
+the world. Examples of imperfect information include hidden cards in
+Poker~\cite{billings02challenge} or Bridge~\cite{ginsberg96partition}, hidden
+tiles in Scrabble~\cite{richards07opponent}, or hidden pieces 
+Kriegspiel (partially observable chess)~\cite{li94chess}. The game tree nodes
+that are indistinguishable to a player because they differ only in the
+information that is hidden to the player by rule compose that player's {\em
+information set.}  The ability to estimate the value of the possible states and
+to reason about the probability distribution over those states is crucial to
+playing imperfect information games well~\cite{thielscher12hyperplay}. 
+
+Information Set Generation (ISG) is an operation that game tree search agents
+can use to identify nodes in the game tree that are consistent with their
+observations~\cite{richards12reasoning}.  Because the operation is relatively
+expensive and may be repeatedly applied by a decision-making agent, its
+efficiency is a key factor in an agent's overall performance.  In this work, we
+show that ISG for kriegspiel can be efficiently parallelized.
 
 The term {\em belief state} is sometimes used interchangeably with information set to refer to a probability
 distribution over possible worlds.  The latter term comes from the game theory community and is preferred here.  A node
@@ -137,118 +147,52 @@ Information set generation is not the same problem as solving a game tree, altho
 subroutine for quality game play in imperfect information games.  In this work, we describe an approach to generating
 information sets for the game of kriegspiel. 
 
-\Section{Background}
-In this section, we describe the game of kriegspiel, and the particular variation of it that we have implemented.
+The paper is organized as follows.  In Section~\ref{Background}, we review necessary background information, including the rules of kriegspiel and the nature of the information set generation problem.  In Section ~\ref{ParSSSE}, we describe the {\sc Charm++} Parallel State Space Search Engine (ParSSSE) platform.  We then provide our experimental results in Section~\ref{Results}.  Related work is discussed in Section~\ref{Related}.  We conclude with a discussion of future work.
 
-Kriegspiel was invented by Henry Michael Temple in 1899.  Historically, the game has required three parties: two
-competing players and one referee.  Each player sits with a chessboard that is partitioned off so as not be seen by the
-other.  One player controls the white pieces; the other controls the black pieces.  The referee has a board on which she
-keeps track of both sets of pieces.  Each player has a full set of chess pieces.  He may position the opponent's pieces
-however he wishes on his own board (if at all).  The players alternate moves as in a regular chess game, but instead of
-announcing their moves out loud, they write the source and destination square of their desired plays on a piece of paper
-and pass them to the referee, so that the requested move is not known to the other player. The referee, who knows the location of
-all pieces, checks the legality of the move.  If the move is legal, the referee makes the move on his own board and
-announces that a legal move has been made and that it is the other player's turn to move.  If the move is illegal
-because it is blocked by an opponent's piece or would place or leave the active player in check, the referee announces,
-``No.''  There is no penalty for attempting an illegal move.  The player continues to attempt moves until one finally
-succeeds.  If a player has no legal moves (because of stalemate or checkmate), the referee announces the game's result.
-With the advent of computers, it is convenient to play the game over a network, with a computer acting as the referee.
+\Section{Background}\label{Background}
+\subsection{Kriegspiel}
+Kriegspiel, or partially observable chess,  was invented by Henry Michael Temple in 1899.  Historically, the
+game has required three parties: two competing players and one referee.  Today,
+players often compete over a computer network, with the role of the referee
+being automated.  One player sees and controls only the white pieces; the
+other, black.  The referee track of both sets of pieces.  The players alternate
+moves as in a regular chess game, but instead of openly declaring their moves,
+they secretly communicate move requests to the referee.  The referee, who knows
+the location of all pieces, checks the legality of the move.  
 
-The referee makes other announcements besides declaring move illegal, and there are several variations of the game that
-differ only in the nature of these announcements.  All declarations by the referee are heard by both players.  Thus, for
-example, a player will hear and know if her opponent has attempted an illegal move, and will thus know that her
-opponent's pieces are configured in such a way as to allow at least one attemptable move that blocked or would leave him
-in check.  
+If the move is legal, the referee makes executes the move and announces that a
+legal move has been made and that it is the other player's turn to move.  If
+the move is illegal because it is blocked by an opponent's piece or would place
+or leave the active player in check, the referee announces, ``No.''  The player
+then continues, without penalty, to attempt moves until one finally succeeds.
+If a player has no legal moves because of stalemate or checkmate, the referee
+announces the game's result.
 
-The referee announces when a player is in check.  (And again, this announcement is heard by both players.)  There is
-some variation in what additional information is supplied in this case.  In one popular variant, the referee declares
-that the player is in check ``by rank,'' ``by file,'' ``by diagonal,'' or ``by knight.''  In the case of a diagonal attack, the
-referee may announce whether the checking piece is along the long or short diagonal (from the king's perspective).  It
-is possible to be in check by two pieces at the same time, in which case the direction of both attacks would be
-declared.  In our implementation, for simplicity, the referee declares only that the player is in check, without
-specifying the nature of the attack.
+The referee makes other announcements besides declaring move illegal, and there
+are several variations of the game that differ only in the nature of these
+announcements.  All declarations by the referee are made to both players.  In
+particular, a player will hear and know if her opponent has attempted an
+illegal move, and will thus know that her opponent's pieces are configured in
+such a way as to allow at least one attemptable move that is blocked or would
+leave him in check.  
 
-In the case of the capture, the referee announces the location of the piece that was captured, so that both players can
-remove the piece from the board.  In some variations, the referee also announces whether the captured piece was a pawn
-or non-pawn.  In our implementation, information about the captured piece is not explicitly provided to the player who
-makes the capture.
+The referee announces when a player is in check. In the case of the capture,
+the referee announces the location of the piece that was captured but not its
+identity.  Because there is no penalty for making illegal moves, it is often to
+a player's advantage to attempt to make moves which are likely to be illegal,
+as hearing such declarations from the referee can provide important information
+to a player about the location of the opponent's pieces.  In particular, since
+a diagonal move by a pawn is legal only the case where such a move would
+capture an opponent's piece, it could potentially be profitable to attempt all
+or many pawn captures on every turn.  In order to speed the game up, the
+referee declares, at the beginning of a player's turn, all locations where a
+pawn capture is possible. 
 
-Because there is no penalty for making illegal moves, it is often to a player's advantage to attempt to make moves which
-are likely to be illegal, as hearing such declarations from the referee can provide important information to a player
-about the location of the opponent's pieces.  In particular, since a diagonal move by a pawn is legal only the case
-where such a move would capture an opponent's piece, it could potentially be profitable to attempt all or many pawn
-captures on every turn.  In order to speed the game up, popular variants of the game require the referee to make some
-kind of declaration at the beginning of a player's turn with respect to the pawn captures that are available.  This may
-be as simple as declaring ``Try'' to indicate that at least one pawn capture is possible.  In our implementation, the
-referee declares all potential pawn captures.
-
-In the case of a pawn promotion, the player making the pawn advancement would secretly notify the referee as to which
-piece (queen, rook, bishop, or knight) he would like.  To reduce the number of bits needed to specify a move, our
-implementation allows only promotion to queen. 
-
-In general, any move that is legal in a regular chess match may be at least attempted by a player in kriegspiel.  And
-any kriegspiel move that is ultimately allowed by the referee would also be a legal move in chess.    
-
-We assume that a player may not attempt the same illegal move more than once per turn.  This means that if a player
-hears multiple declarations from the referee that the opponent has attempted an illegal move, the player may assume that
-the opponent has at least that many possibilities available to him.
-
-\SubSection{Special Moves}
-Our implementation supports the capability for pawns to move two spaces on their first turn.  However, we did not
-implement support for castling or {\em en passant} pawn capture.  (These moves require maintaining additional bits of
-information at each state that keep track of whether pieces have moved and/or whether pieces moved on the previous
-turn.) 
+In general, any move that is legal in a regular chess match may be at least
+attempted by a player in Kriegspiel.  And any Kriegspiel move that is
+ultimately allowed by the referee would also be a legal move in chess.    
 
 \SubSection{Example}
-%\includegraphics[width=0.2\textwidth]{images/1W.png}
-%\begin{minipage}{\textwidth}
-%\centering
-%\subfloat[1. d4]{\label{fig:1W}\includegraphics[width=0.2\textwidth]{images/1W.png}}
-%\qquad
-%\subfloat[1. ... a5]{\label{fig:1B}\includegraphics[width=0.2\textwidth]{images/1B.png}}
-%\qquad
-%\subfloat[2. Bg5]{\label{fig:2W}\includegraphics[width=0.2\textwidth]{images/2W.png}}
-%\qquad
-%\subfloat[2. ... b6]{\label{fig:2B}\includegraphics[width=0.2\textwidth]{images/2B.png}}
-%\end{minipage}
-%\begin{minipage}{\textwidth}
-%\centering
-%\subfloat[3. Nc3]{\label{fig:3W}\includegraphics[width=0.2\textwidth]{images/3W.png}}
-%\qquad
-%\subfloat[3. ... c5]{\label{fig:3B}\includegraphics[width=0.2\textwidth]{images/3B.png}}
-%\qquad
-%\subfloat[4. d5]{\label{fig:4W}\includegraphics[width=0.2\textwidth]{images/4W.png}}
-%\qquad
-%\subfloat[4. ... Na6]{\label{fig:4B}\includegraphics[width=0.2\textwidth]{images/4B.png}}
-%\end{minipage}
-%\begin{minipage}{\textwidth}
-%\centering
-%\subfloat[5. d6!]{\label{fig:5W}\includegraphics[width=0.2\textwidth]{images/5W.png}}
-%\qquad
-%\subfloat[5. ... f6!]{\label{fig:5B}\includegraphics[width=0.2\textwidth]{images/5B.png}}
-%\qquad
-%\subfloat[6. e4]{\label{fig:6W}\includegraphics[width=0.2\textwidth]{images/6W.png}}
-%\qquad
-%\subfloat[6. ... fg]{\label{fig:6B}\includegraphics[width=0.2\textwidth]{images/6B.png}}
-%\end{minipage}
-%\begin{minipage}{\textwidth}
-%\centering
-%\subfloat[7. Bc4]{\label{fig:7W}\includegraphics[width=0.2\textwidth]{images/7W.png}}
-%\qquad
-%\subfloat[7. ... ed]{\label{fig:7B}\includegraphics[width=0.2\textwidth]{images/7B.png}}
-%\qquad
-%\subfloat[8 Qd5!]{\label{fig:8W}\includegraphics[width=0.2\textwidth]{images/8W.png}}
-%\qquad
-%\subfloat[8 ... Qc7?]{\label{fig:8B}\includegraphics[width=0.2\textwidth]{images/8B.png}}
-%\end{minipage}
-%\begin{minipage}{\textwidth}
-%\centering
-%\subfloat[9 Qf7+]{\label{fig:9W}\includegraphics[width=0.2\textwidth]{images/9W.png}}
-%\qquad
-%\subfloat[9 ... d8]{\label{fig:9B}\includegraphics[width=0.2\textwidth]{images/9B.png}}
-%\qquad
-%\subfloat[10 Qxf8++]{\label{fig:10W}\includegraphics[width=0.2\textwidth]{images/8W.png}}
-%\end{minipage}
 \begin{figure}[ht]
 \centering
 \begin{minipage}[b]{0.5\linewidth}
@@ -292,10 +236,10 @@ turn.)
 %\caption{Listing of a kriegspiel game resulting in checkmate by white after 10 moves.}
 %\end{figure}
 
-The concept of information sets is perhaps best explained through an example.  (See also Appendix A.)
-Figures~\ref{listing} and~\ref{sequence} show a full listing and the associated pictorial progression of an actual
-kriegspiel game from ~\cite{li94chess}.  We have adapted the notation used by Wolfe for Berkeley Kriegspiel.  The moves
-are numbered in pairs: a move by white on one line followed by black's move on the next line.  The actual move is shown
+\subsection{Information Set Generation}
+The concept of information sets is perhaps best explained through an example. 
+Figure~\ref{listing} and show a full listing and the associated pictorial progression of an actual
+kriegspiel game~\cite{li94chess}.  We have adapted the notation used by Wolfe for Berkeley Kriegspiel.  Odd (resp. even) moves are for white (resp. black).  The actual move is shown
 first followed by a list of referee announcements.  Captures announcements are prefixed with an X and give the location
 of the captured piece.  Similarly, pawn tries announcements are prefixed with T.  Attempted moves that were ultimately
 declared illegal are shown in a list following the `:'.  For example at move 9, (Figure~\ref{fig:9W}--\ref{fig:9B}),
@@ -312,6 +256,9 @@ transcript from white's perspective is shown in Figure~\ref{filteredlisting}.  N
 replaced with ``??'' and lists of black's illegal moves have been replaced with the {\em number} of illegal attempted
 moves.  For example, on move 9, black attempted three illegal moves.
 \begin{figure}
+\begin{minipage}[b]{0.35\linewidth}
+\centering
+\small
 \begin{verbatim}
 1. d4 {(:)}
    ?? {(:0)}
@@ -323,6 +270,12 @@ moves.  For example, on move 9, black attempted three illegal moves.
    ??  {(:0)}
 5. d6 {(:)}
    ?? {(:0,Td6)}
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[b]{0.25\linewidth}
+\small
+\centering
+\begin{verbatim}
 6. e4 {(:)}
    fxg5 {(Xg5:Td6;Tg5)}
 7. Bc4 {(:)}
@@ -333,6 +286,7 @@ moves.  For example, on move 9, black attempted three illegal moves.
    ?? {:0}
 10. Qxf8++ {(1-0:)}
 \end{verbatim}
+\end{minipage}
 \caption{Listing of a kriegspiel game resulting in checkmate by white after 10 moves.}
 \label{filteredlisting}
 \end{figure}
@@ -344,10 +298,12 @@ players}, that are consistent with those observations.  In other words, any sequ
 the same sequence of observations for black is in black's information set.  Figure~\ref{abbrevoutput} shows the
 information set for black after both player's have made five moves.  From this list of possibilities, black can infer
 that white must have a bishop at g5 and a pawn at d6.  There are 25 possible sequences of moves that are consistent with
-black's observations up to that point. Table~\ref{bothtimes} shows the size of the information sets for each player for
-each move in the game and the amount of time to find the full set on a single processor.  Appendix B shows the full
-output of the program for the same point in the game (five moves for each player) and illustrates all of the possible
-positions in the belief state.
+black's observations up to that point. 
+
+%Table~\ref{bothtimes} shows the size of the information sets for each player for
+%each move in the game and the amount of time to find the full set on a single processor.  Appendix B shows the full
+%output of the program for the same point in the game (five moves for each player) and illustrates all of the possible
+%positions in the belief state.
 
 \begin{figure}
 \begin{mytinylisting}
@@ -388,34 +344,34 @@ From this, black can infer that there is definitely a white bishop at g5 and a w
 \label{abbrevoutput}
 \end{figure}
 
-\begin{table}
-\centering
-\begin{tabular}{rrrrr}
- & \multicolumn{2}{c}{\bf White} & \multicolumn{2}{c}{\bf Black} \\
-{\bf Ply} & {\bf Size} & {\bf Time} & {\bf Size} & {\bf Time} \\
-1 & 18 & 0.000 & 20 & .000 \\
-2 & 18 & 0.000 & 19 & .000 \\
-3 & 18 & 0.000 & 404 & .008\\
-4 & 279 & 0.008 & 401 & .024\\
-5 & 242 & 0.028 & 1472 & .044\\
-6 & 216 & 0.052 & 155 & .096\\
-7 & 176 & 0.064 & 293 & .116\\
-8 & 3406 & 0.092 & 158 & .128\\
-9 & 2191 & 0.288 & 118 & .148\\
-10 & 1423 & 0.508 & 25 & .152\\
-11 & 1363 & 0.596 & 798 & .164\\
-12 & 1416 & 0.744 & 518 & .192\\
-13 & 1416 & 0.836 & 13564 & .304\\
-14 & 3440 & 0.97 & 12394 & .776\\
-15 & 3428 & 1.25 & 343652 & 3.75\\
-16 & 50521 & 1.82 & 320704 & 17.3\\
-17 & 43192 & 5.91 & 490162 & 99.9\\
-18 & 26128 & 7.94 & 3792 & 119\\
-19 & 19061 & 9.92 & 14836 & 121\\
-\end{tabular}
-\caption{Solution counts and running times for a sample kriegspiel game}
-\label{bothtimes}
-\end{table}
+%\begin{table}
+%\centering
+%\begin{tabular}{rrrrr}
+% & \multicolumn{2}{c}{\bf White} & \multicolumn{2}{c}{\bf Black} \\
+%{\bf Ply} & {\bf Size} & {\bf Time} & {\bf Size} & {\bf Time} \\
+%1 & 18 & 0.000 & 20 & .000 \\
+%2 & 18 & 0.000 & 19 & .000 \\
+%3 & 18 & 0.000 & 404 & .008\\
+%4 & 279 & 0.008 & 401 & .024\\
+%5 & 242 & 0.028 & 1472 & .044\\
+%6 & 216 & 0.052 & 155 & .096\\
+%7 & 176 & 0.064 & 293 & .116\\
+%8 & 3406 & 0.092 & 158 & .128\\
+%9 & 2191 & 0.288 & 118 & .148\\
+%10 & 1423 & 0.508 & 25 & .152\\
+%11 & 1363 & 0.596 & 798 & .164\\
+%12 & 1416 & 0.744 & 518 & .192\\
+%13 & 1416 & 0.836 & 13564 & .304\\
+%14 & 3440 & 0.97 & 12394 & .776\\
+%15 & 3428 & 1.25 & 343652 & 3.75\\
+%16 & 50521 & 1.82 & 320704 & 17.3\\
+%17 & 43192 & 5.91 & 490162 & 99.9\\
+%18 & 26128 & 7.94 & 3792 & 119\\
+%19 & 19061 & 9.92 & 14836 & 121\\
+%\end{tabular}
+%\caption{Solution counts and running times for a sample kriegspiel game}
+%\label{bothtimes}
+%\end{table}
 
 %Table~\ref{sampletimes}
 %\begin{table}
@@ -445,52 +401,44 @@ From this, black can infer that there is definitely a white bishop at g5 and a w
 %\end{table}
 
    
-\Section{The Information Set Generation Algorithm}
-We have formulated information set generation as a combinatorial search problem.  The input to the algorithm is a list
-of observations for one player in a kriegspiel game.  We assume that the agent has perfect recall (i.e., remembers all
-of its own decisions), which is a reasonable assumption for kriegspiel.  (See~\cite{gilpin07algorithms} for a further
-discussion of perfect recall.)  
+{The Information Set Generation Algorithm}
+ISG can be formulated as a combinatorial search problem.  The input to the algorithm is a list
+of observations for one player in a kriegspiel game.    
 
 The nodes in the search tree at depth $n$ correspond possible to possible sequences of $n$ plies from the start state.
 There is a search space variable for each ply in the game, and the values that a variable can take on are all possible
-legal moves.  A kriegspiel game may last for on the order of tens of plies.  Moves are parameterized by the piece that
-is relocating (both black and white have six different types of pieces: king, queen, rook, bishop, knight, pawn), the
-source square, and the destination square.  Only a few hundred of the $64 \times 64 \times 6$ combinations represent
-moves that are legitimate in at least some scenarios.  For example, no piece could ever move from a3 to h2\footnote{We
-observe the convention that on an $8 \times 8$ chessboard the rows are numbered 1 to 8 and the columns are labeled a to
-h.} in one move.
-
-Information set generation, then, is an all-solutions search through the space.  Whenever a node in the search tree is
-found to be inconsistent with the actual observation given in the input, the subtree rooted at that node is pruned.
-There are types of observations that must match in order for the state to be found: check status, pawn tries, and 
-illegal moves available/attempted.
+legal moves.  Information set generation, then, is an all-solutions search through the space.  Whenever a node in the search tree is
+found to be inconsistent with the actual observation given in the input, the
+subtree rooted at that node is pruned (i.e., search is discontinued along that
+path).  There are types of observations that must match in order for the state
+to be found: check status, pawn tries, and illegal moves available/attempted.
 
 Figure~\ref{codelisting} shows the function at the heart of our information set generation algorithm.  The actual
 observations can be viewed as global, read-only variables.  All solutions (i.e., all nodes in the information set) will
 be located at the same depth in the tree: the depth that is equal to the number of plies in the observation list.
 Referee announcements regarding pawn tries or a player being in check are made prior to a move.  The algorithm checks
-for the consistency of these observations in lines $5--6$.  If the search reaches the appropriate depth and passes these
-tests, then a solution has been found and is reported (line $7$).  
+for the consistency of these observations at line $7$.  If the search reaches the appropriate depth and passes these
+tests, then a solution has been found and is added to the information set (line $3$).  
 
-Otherwise, we consider the possible moves that can be made from that state.  If the player whose turn it is to move at
-the current level of the search tree is the same player from whose perspective we have received observations, then the
-next step is to make sure that every legal move that was attempted at the player at that ply is also at least
-attemptable at the game position that corresponds to the game tree node (lines $15--22$).  We know exactly the legal
-move that was ultimately made at this depth (because we are assuming perfect recall), and we check to make sure that
-this move is indeed legal (pruning otherwise).  If so, we apply that move and recurse (lines $24--32$).  This
-corresponds to a ``forced move'' in the general search paradigm.
-
-On the other hand, if the player whose turn it is to move at the current depth of the search tree is the opponent, then
-must consider all possible legal moves to branch on.  We first check to make sure that the number of legal moves from
-this position is at least as large as the number of illegal moves that the opponent attempted (i.e., the number of times
-the referee said ``No'' before finally accepting the opponent's move).  This is shown in lines $39--42$.  At this point
-we generate a child for each move that would be accepted by the referee and recurse (lines $44--52$).
-
-One of our goals was to assess the varying utilities of the different pruning criteria.  We tried some different
-orderings of the tests and were somewhat surprised (and disappointed) to see that there was actually a fairly minimal
-impact on performance.  This could be due to the fact that because of the tedious nature of encoding problem instances
-from actual games, we were not able to run experiments of a wide variety of types of positions (i.e., different styles
-of play).
+%Otherwise, we consider the possible moves that can be made from that state.  If the player whose turn it is to move at
+%the current level of the search tree is the same player from whose perspective we have received observations, then the
+%next step is to make sure that every legal move that was attempted at the player at that ply is also at least
+%attemptable at the game position that corresponds to the game tree node (lines $15--22$).  We know exactly the legal
+%move that was ultimately made at this depth (because we are assuming perfect recall), and we check to make sure that
+%this move is indeed legal (pruning otherwise).  If so, we apply that move and recurse (lines $24--32$).  This
+%corresponds to a ``forced move'' in the general search paradigm.
+%
+%On the other hand, if the player whose turn it is to move at the current depth of the search tree is the opponent, then
+%must consider all possible legal moves to branch on.  We first check to make sure that the number of legal moves from
+%this position is at least as large as the number of illegal moves that the opponent attempted (i.e., the number of times
+%the referee said ``No'' before finally accepting the opponent's move).  This is shown in lines $39--42$.  At this point
+%we generate a child for each move that would be accepted by the referee and recurse (lines $44--52$).
+%
+%One of our goals was to assess the varying utilities of the different pruning criteria.  We tried some different
+%orderings of the tests and were somewhat surprised (and disappointed) to see that there was actually a fairly minimal
+%impact on performance.  This could be due to the fact that because of the tedious nature of encoding problem instances
+%from actual games, we were not able to run experiments of a wide variety of types of positions (i.e., different styles
+%of play).
 
 %\begin{figure}
 %%\begin{listing}
@@ -577,7 +525,7 @@ of play).
 \end{boxedminipage}
 \end{figure}
 
-\Section{Charm++}
+\Section{Charm++ and ParSSSE}\label{ParSSSE}
 We built our search engine on top of the {\sc Charm++} run-time
 system for parallel processing~\cite{kale93charm,kale09charm}.  {\sc Charm++}
 is an extension to the C++ programming language that provides
@@ -616,7 +564,7 @@ many processors idling while a small number of processors execute the larger
 workloads. By allowing the {\sc Charm++} runtime system to schedule a large
 number of small pieces of work, better adaptive load balancing is achieved. 
 
-\Section{The {\sc Charm++} Parallel State Space Search Engine}
+%\subsection{The {\sc Charm++} Parallel State Space Search Engine}
 Sun \etal have developed the Parallel State Space Search Engine ({\sc ParSSSE})
 within the {\sc Charm++} framework, which exposes an API that is useful for a
 variety of graph-based and tree-based search problems~\cite{sun11adaptive}. In
@@ -669,121 +617,120 @@ important tasks are more likely to get done sooner.
 In addition to these strategies, a user may define its own load balancing
 strategies by overriding {\sc Charm++} task dispersal functions.
 
-\Section{Performance Results}
-We built our search on top of the same general search engine that we used in class.  The performance results reported in
-this section were obtained by running our program on Bleuprint with up to 1024 processors.
+%%We built our search on top of the same general search engine that we used in class.  The performance results reported in
+%%this section were obtained by running our program on Bleuprint with up to 1024 processors.
+%%
+%%Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
+%%the size of the information set was about 4.5 million.  (This instance is not necessarily representative of all games or
+%%states of the game, but it was not cherry-picked in any way.)  The table shows that the problem is indeed highly
+%%parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
+%%speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
+%%on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
+%%This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
+%%for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
+%%
+%%\begin{table}
+%%\centering
+%%\begin{tabular}{rrr}
+%%{\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
+%%1	&	1524	&	1\\
+%%2	&	812	&	1.88\\
+%%4	&	407	&	3.74\\
+%%8	&	208	&	7.32\\
+%%16	&	102	&	14.8\\
+%%32	&	53.2	&	28.7\\
+%%64	&	28.0	&	54.5\\
+%%128	&	14.9	&	102\\
+%%256	&	7.70	&	197\\
+%%512	&	4.59	&	331\\
+%%1024	&	2.64	&	576\\
+%%\end{tabular}
+%%\caption{Speedups for a randomly selected problem instance on 1--1024 processors.  The input observations were from the
+%%10th ply of the game tree and the size of the information set in this instance is 4,495,121.}
+%%\label{speedups}
+%%\end{table}
+%%
+%%\begin{figure}[h]
+%%\centering
+%%\includegraphics[width=0.7\columnwidth]{plots/3schemes.pdf}
+%%\caption{Experiments using different load balancing strategies.}
+%%\label{3schemes}
+%%\end{figure}
+%%
+%%In our next round of experiments, we set out to compare a few different load-balancing strategies for the problem.  We
+%%used the random, work stealing, and neighborhood balancing strategies that are available in the general purpose search
+%%engine.  These results are shown in Figure~\ref{3schemes}.  Our results show that there was actually very little
+%%variation in performance across the different strategies.  We did notice that across all of our experiments, the work
+%%stealing approach appeared to be consistently---if only marginally---better than the others.  Our hypothesis here is
+%%that perhaps the nodes are rarely starved for work.  In other words, perhaps the very nature of the problem means that
+%%the load is naturally well-balanced and that the load-balancer rarely needs to do a significant amount of
+%%redistribution.  This is probably also related to the fact that we are doing an all-solutions search. 
+%%
+%% 
+%%\begin{figure}[h]
+%%\centering
+%%\begin{minipage}{0.5\linewidth}
+%%\includegraphics[width=\columnwidth]{plots/3depths.pdf}
+%%\end{minipage}
+%%\centering
+%%\begin{minipage}{0.5\linewidth}
+%%\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
+%%\end{minipage}
+%%\caption{(Left) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
+%%(Right) Same data with a linear y-axis for the running time (to help see the isoefficiency.)}
+%%\label{3depths}
+%%\end{figure}
+%%
+%%We next attempted to measure the isoefficiency of the problem---how is efficiency of the parallelization of the
+%%algorithm affected by {\em size} of the problem?  To test this we varied the number of plies in the test instance from
+%%8 to 12. We used the work stealing load balancing strategy.  The results are shown in Table~\ref{3depths}.  The data are
+%%the same in both tables, but the one on the left uses a log-log scale.  In the easiest case (depth 8), there isn't
+%%enough additional parallel work to justify the jump from 256 to 1024 processors, and performance actually degrades.
+%%Other than that, however, we see consistent speedups as we increase the number of processors.  The plot on the right helps to
+%%illustrate the good isoefficiency of the problem.  As the size of the problem increases, the amount of parallelizable
+%%work available also increases, and therefore the steepness of the speed curve is higher for larger problem sizes, as the
+%%number of processors increases.
+%% 
+%%\begin{figure}[h]
+%%\centering
+%%\includegraphics[width=0.6\columnwidth]{plots/dep8.pdf}
+%%\caption{Grainsize control data for depth 8 problems.}
+%%\label{dep8}
+%%\end{figure}
+%% 
+%%\begin{figure}[h]
+%%\centering
+%%\includegraphics[width=0.6\columnwidth]{plots/dep10.pdf}
+%%\caption{Grainsize control data for depth 10 problems.}
+%%\label{dep10}
+%%\end{figure}
+%% 
+%%\begin{figure}[h]
+%%\centering
+%%\includegraphics[width=0.6\columnwidth]{plots/dep12.pdf}
+%%\caption{Grainsize control data for depth 12 problems.}
+%%\label{dep12}
+%%\end{figure}
+%%
+%%Finally, we ran some experiments to measure the effect of grainsize on the problem.  The results are shown in
+%%Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet spot'' for each problem size.  (At least it is
+%%clear for this particular instance.  It is possible that there would be different behavior on different problem
+%%instances.)  When the grainsize is too small, the overall computation is hampered by excessive parallel overhead
+%%(communication, queueing of nodes to expand, load balancing operations).  On the other hand, when the grain size is too
+%%large, it becomes too difficult to ensure that all processors are busy and processors are not idling with no work to do
+%%while a small number of processors are busy doing large-sized chunks of work.  
+%%
+%%In our experiments, the optimal grainsize is clearly related to the size of the problem, the depth of the search tree.
+%%The optimal sequential threshold seems to be $2--4$ less than the problem depth.  Since the depth of all solutions is
+%%the same for each problem instance, this means that the number of levels that should be searched sequentially is fairly
+%%consistent across problem sizes.  We noted that the number of solutions found---in other words, the size of the
+%%information sets---is typically fairly large with respect to the total number of nodes expanded.  (We don't have hard
+%%figures, but we estimate that it was often $30-40\%$).  This high density of solutions limits the variability that can
+%%be present in the amount of work to be done at the nodes representing the last few levels of the tree.  This means that
+%%the best grainsize is also likely to be fairly predictable.  
 
-Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
-the size of the information set was about 4.5 million.  (This instance is not necessarily representative of all games or
-states of the game, but it was not cherry-picked in any way.)  The table shows that the problem is indeed highly
-parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
-speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
-on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
-This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
-for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
-
-\begin{table}
-\centering
-\begin{tabular}{rrr}
-{\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
-1	&	1524	&	1\\
-2	&	812	&	1.88\\
-4	&	407	&	3.74\\
-8	&	208	&	7.32\\
-16	&	102	&	14.8\\
-32	&	53.2	&	28.7\\
-64	&	28.0	&	54.5\\
-128	&	14.9	&	102\\
-256	&	7.70	&	197\\
-512	&	4.59	&	331\\
-1024	&	2.64	&	576\\
-\end{tabular}
-\caption{Speedups for a randomly selected problem instance on 1--1024 processors.  The input observations were from the
-10th ply of the game tree and the size of the information set in this instance is 4,495,121.}
-\label{speedups}
-\end{table}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.7\columnwidth]{plots/3schemes.pdf}
-\caption{Experiments using different load balancing strategies.}
-\label{3schemes}
-\end{figure}
-
-In our next round of experiments, we set out to compare a few different load-balancing strategies for the problem.  We
-used the random, work stealing, and neighborhood balancing strategies that are available in the general purpose search
-engine.  These results are shown in Figure~\ref{3schemes}.  Our results show that there was actually very little
-variation in performance across the different strategies.  We did notice that across all of our experiments, the work
-stealing approach appeared to be consistently---if only marginally---better than the others.  Our hypothesis here is
-that perhaps the nodes are rarely starved for work.  In other words, perhaps the very nature of the problem means that
-the load is naturally well-balanced and that the load-balancer rarely needs to do a significant amount of
-redistribution.  This is probably also related to the fact that we are doing an all-solutions search. 
-
- 
-\begin{figure}[h]
-\centering
-\begin{minipage}{0.5\linewidth}
-\includegraphics[width=\columnwidth]{plots/3depths.pdf}
-\end{minipage}
-\centering
-\begin{minipage}{0.5\linewidth}
-\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
-\end{minipage}
-\caption{(Left) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
-(Right) Same data with a linear y-axis for the running time (to help see the isoefficiency.)}
-\label{3depths}
-\end{figure}
-
-We next attempted to measure the isoefficiency of the problem---how is efficiency of the parallelization of the
-algorithm affected by {\em size} of the problem?  To test this we varied the number of plies in the test instance from
-8 to 12. We used the work stealing load balancing strategy.  The results are shown in Table~\ref{3depths}.  The data are
-the same in both tables, but the one on the left uses a log-log scale.  In the easiest case (depth 8), there isn't
-enough additional parallel work to justify the jump from 256 to 1024 processors, and performance actually degrades.
-Other than that, however, we see consistent speedups as we increase the number of processors.  The plot on the right helps to
-illustrate the good isoefficiency of the problem.  As the size of the problem increases, the amount of parallelizable
-work available also increases, and therefore the steepness of the speed curve is higher for larger problem sizes, as the
-number of processors increases.
- 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.6\columnwidth]{plots/dep8.pdf}
-\caption{Grainsize control data for depth 8 problems.}
-\label{dep8}
-\end{figure}
- 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.6\columnwidth]{plots/dep10.pdf}
-\caption{Grainsize control data for depth 10 problems.}
-\label{dep10}
-\end{figure}
- 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.6\columnwidth]{plots/dep12.pdf}
-\caption{Grainsize control data for depth 12 problems.}
-\label{dep12}
-\end{figure}
-
-Finally, we ran some experiments to measure the effect of grainsize on the problem.  The results are shown in
-Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet spot'' for each problem size.  (At least it is
-clear for this particular instance.  It is possible that there would be different behavior on different problem
-instances.)  When the grainsize is too small, the overall computation is hampered by excessive parallel overhead
-(communication, queueing of nodes to expand, load balancing operations).  On the other hand, when the grain size is too
-large, it becomes too difficult to ensure that all processors are busy and processors are not idling with no work to do
-while a small number of processors are busy doing large-sized chunks of work.  
-
-In our experiments, the optimal grainsize is clearly related to the size of the problem, the depth of the search tree.
-The optimal sequential threshold seems to be $2--4$ less than the problem depth.  Since the depth of all solutions is
-the same for each problem instance, this means that the number of levels that should be searched sequentially is fairly
-consistent across problem sizes.  We noted that the number of solutions found---in other words, the size of the
-information sets---is typically fairly large with respect to the total number of nodes expanded.  (We don't have hard
-figures, but we estimate that it was often $30-40\%$).  This high density of solutions limits the variability that can
-be present in the amount of work to be done at the nodes representing the last few levels of the tree.  This means that
-the best grainsize is also likely to be fairly predictable.  
-
-\Section{New Results}
-In addition to the random instances, we also evaluated our information set generation routine on 40 positions from actual kriespiel games, including human vs. human and computer vs. computer.  Many of these were trivial to solve in a few seconds or less on a desktop computer.  The running times and speedups for two of the more challenging instances are shown in Tables~\ref{prob4}--\ref{tab:prob5speedups}.  These tables show the results for runs on one to $1024$ cores.  Each column corresponds to a different parameter.  In this case, the grainsize is the number of levels of the search tree that are searched in parallel.  Up to that threshold, each node that is generated spawns a new piece of work, which the {\sc Charm++} runtime schedules to execute on one of the processing elements according to its load balancing strategy.  Above the threshold the entire subtree is searched to completion on a single processor, with no additional parallel overhead. 
+\Section{Performance Results}\label{Results}
+We also evaluated our information set generation routine on 40 positions from actual kriespiel games, including human vs. human and computer vs. computer.  Many of these were trivial to solve in a few seconds or less on a desktop computer.  The running times and speedups for two of the more challenging instances are shown in Tables~\ref{prob4}--\ref{tab:prob5speedups}.  These tables show the results for runs on one to $1024$ cores.  Each column corresponds to a different parameter.  In this case, the grainsize is the number of levels of the search tree that are searched in parallel.  Up to that threshold, each node that is generated spawns a new piece of work, which the {\sc Charm++} runtime schedules to execute on one of the processing elements according to its load balancing strategy.  Above the threshold the entire subtree is searched to completion on a single processor, with no additional parallel overhead. 
 
 Note that the optimal grainsize varies for the different numbers of cores and the pattern is relatively consistent across problem instances.  The optimal grainsize increases as the number of cores increases.  This makes sense, because as this parameter grows, the number of distinct pieces of work increases.  When the number of pieces of work per processor is high, much of the overhead of parallelization is wasted.  But as the number of cores increases, the work can be efficiently broken up into smaller pieces and doled out to all the cores.  With more pieces of work, it becomes easier to balance the load.
 
@@ -882,9 +829,8 @@ Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
 \Section{Related Work}
 An overview of the theory of imperfect information games and other basic topics in game theory can be found
 in~\cite{kuhn03lectures} and~\cite{kuhn97classics}.  A technical explanation of the concept of information sets can be
-found in~\cite{gilpin07algorithms}.  Algorithms for ``solving'' imperfect information games---in the sense of finding a
-Nash equilibrium---can be found in~\cite{koller94fast} and~\cite{koller97representations}.  Koller \etal, showed that an
-equilibrium can be found in time that is polynomial in the number of nodes in the game tree.  And in fact, they found
+found in~\cite{gilpin07algorithms}.  Koller \etal, showed that a Nash
+equilibrium can be found in time that is polynomial in the number of nodes in the game tree~\cite{koller94fast}.  In fact, they found
 that it took about as much time to generate the full game tree as it did to actually solve it.  Unfortunately, this is
 feasible only for small games.  In larger games where theoretically optimal strategies cannot be computed efficiently,
 computer systems tend to utilize the concept of information sets or belief states in some form or another.  A common
@@ -898,13 +844,12 @@ the problem differently.  Parker \etal, consider the problem of sampling from be
 trees, including kriegspiel~\cite{parker05game}.  They show that some performance gains can be achieved by only
 approximate sampling from the belief state.  Instead of generating the full information set, or even sampling from it,
 they sample from possible positions for the current state (i.e., sampling from the belief state) by matching only the
-most recent observations.  This motivation for this approach seems to be that it would not be feasible to sample from
+most recent observations.  The motivation for this approach seems to be that it would not be feasible to sample from
 the full information set, because of the computational expense involved.  And indeed, our experiments bear this out-- it
 can indeed be expensive to produce the full information set.  For the experiments shown in Table~\ref{speedups},
 generating the full information set took over 25 minutes on a single processor.  However, by utilizing the Charm++
 search engine on a parallel machine (1024 processors), we were able to generate the full set in just 2.9 seconds.  (Note
-that this set had more than 4 million members.)  Our results suggest that the problem is highly scalable and our
-approach might therefore be preferred.
+that this set had more than 4 million members.)  
 
 Li gives an overview of kriegspiel and discusses strategy from the perspective of human players~\cite{li94chess}.  He
 walks through the analysis of several actual games between two human players and discusses the inferences that each
@@ -922,10 +867,10 @@ knowledge of the player's belief state.  They claim that under certain "aggressi
 information sets to exceed 10,000 nodes in size.  They throw out (i.e., do not analyze) any positions that exceed this
 threshold.  
 
-In our experiments, we have found positions in which the size of the information set is many tens of millions.  Our goal
-is to develop strategies that are amenable to use in this more general setting.   In other words, rather than being able
-to analyze positions only at the beginning or end of the game (when the size of the information set tends to be
-smaller), we want to be able to develop a strategy that can be used in the middle of the game as well.  game). 
+%In our experiments, we have found positions in which the size of the information set is many tens of millions.  Our goal
+%is to develop strategies that are amenable to use in this more general setting.   In other words, rather than being able
+%to analyze positions only at the beginning or end of the game (when the size of the information set tends to be
+%smaller), we want to be able to develop a strategy that can be used in the middle of the game as well.  game). 
 
 Nance \etal, approach the game from the perspective of {\em logical filtering.}~\cite{nance06reasoning}  The goal of
 logical filtering is to maintain a compact logical representation of an agent's belief state.  Recall that a belief
@@ -946,62 +891,63 @@ also highly scalable.  Furthermore, contrary to the approach in~\cite{nance06rea
 adaptable to sampling algorithms.  Given a sample size that matches available memory, any single sequence of moves is
 readily extractable without the computational expense of a theorem prover or SAT solver.
 
-\Section{Future Work}
+\Section{Conclusion Future Work}
+We have shown that information set generation for kriegspiel can be efficiently parallelized in a way that scales up to at least 1024 processors.
 
-First and foremost, it would be interesting to see how our information set generation algorithm would perform as a
-subroutine to an actual kriegspiel playing program.  The utility of generating an information set is ultimately
-determined by how well that information improves a player's decision-making capabilities.  We noted earlier that a
-common use of information sets is to estimate the value of a move by averaging the estimated value of the associated
-descendant for each node in the current information set (or a random sample from the set).  This kind of strategy can be
-applied naively using a belief state sampling algorithm (i.e., an algorithm that samples from the distribution of
-possible worlds in the current state without respect to the overall history of moves).  However, it has been shown that
-significant improvement in play can be achieved by estimating the value of future moves from the perspective of the
-opponent, based on the knowledge that the opponent would have had at prior positions in the move
-history~\cite{richards07opponent}.  Such a strategy would require the use of an information set generation algorithm of the
-kind that we have described here.\footnote{This work is underway.}
+A key line of future research is to use our ISG routine as part of a full Kriegspiel play.  The ISG method itself could be updated using constraint-satisfaction techniques outlined in ~\cite{richards12information}, which improve pruning performance in the search space by incorporating information from all observations in the list at each search step, instead of performing depth-first search.   The use of ISG-based opponent modeling to improve overall decision making is described in ~\cite{richards12reasoning}. 
 
-Ideally, we would run our algorithm on some deeper instances from real kriegspiel games.  We are not aware of a
-repository of such games.  Unfortunately, notation for kriegspiel is not standardized and there are several minor
-variations in rules (i.e., with respect to the nature of referee announcements) that are unlikely to significantly to
-impact the computability and scalability results but which nevertheless make it difficult to write an input reader that
-converts the transcript of a game into a sequence of moves readable by our algorithm.  An alternative would be to play
-some games ourselves.  Currently, the manual encoding of games is not difficult but is tedious.  Still, it would be nice
-to have some games that go on for 40 or 50 moves and have positions where the information sets are of moderate size (on
-the order of a few hundred thousand to a few million).
+%determined by how well that information improves a player's decision-making capabilities.  We noted earlier that a
+%common use of information sets is to estimate the value of a move by averaging the estimated value of the associated
+%descendant for each node in the current information set (or a random sample from the set).  This kind of strategy can be
+%applied naively using a belief state sampling algorithm (i.e., an algorithm that samples from the distribution of
+%possible worlds in the current state without respect to the overall history of moves).  However, it has been shown that
+%significant improvement in play can be achieved by estimating the value of future moves from the perspective of the
+%opponent, based on the knowledge that the opponent would have had at prior positions in the move
+%history~\cite{richards07opponent}.  Such a strategy would require the use of an information set generation algorithm of the
+%kind that we have described here.\footnote{This work is underway.}
 
-The information set generation algorithm that we have implemented here is the most straightforward one and is alluded to
-in~\cite{parker05game} and~\cite{russell05efficient}.  It is analogous to the ``expand-at-the-tip'' strategy for the
-Hamiltonian Circuit problem.  An alternative information set generation algorithm is described
-in~\cite{richards09information} (but not implemented in parallel) and could potentially improve the search efficiency
-greatly by exploiting variable ordering.  This would be analogous to the disconnected edge-pairs\footnote{This is what we
-referred to as ``algorithm 2'' in class.} heuristic for the Hamiltonian Circuit problem.  Rather than search from the
-root node going forward, this algorithm would seek opportunities for pruning based on the propagation of logical
-consequences from each move both forward and backward in time.  This, incidentally, is more consistent with the way
-human players would analyze the game.  For example, if a player's proposed bishop move is rejected and the bishop is
-sufficiently removed from its own king, then the player may infer that one of his opponent's pieces is along that
-rejected path.  At least one of those spaces must have been the destination of a prior move by the opponent.  If a
-recent move by that bishop crossed the same path, then that would be hard evidence that those squares were empty at the
-time.  And therefore, the arrival of the opponent's piece must have been between the previous (successful) bishop move
-and the current (unsuccessful) bishop move.  To implement this algorithm, we envision the use of planning graph type
-data structures~\cite{blum97fast}.  Planning graphs have a sequence of alternating levels of state constraints and
-action constraints.  State constraints would be of the form $at(bishop,d4) \vee at(bishop,e6)$ or $!occupied(e4)$.
-Action constraints would be of the form $move(knight,a4,c5) \vee move(knight,e6)$.  At a minimum, each level would
-require a data structure with a bit for each possible action/state.  Propagating the constraints would require much of
-the same machinery used in STRIPS-like planning algorithms~\cite{chen05solving}, and one of the many knobs that would
-need to be tuned would be the depth of the propagation for each constraint.  (Should the consequences of a known action
-or non-action be propagated one move into the future and one move into the past?  More?  Less?)  Additionally, there
-would be a significant and interesting tradeoff in the effectiveness of pruning and the size of the data
-structures that would have to be encoded in each chare.  The best algorithm might be a hybrid strategy that does forward
-propagation from the root at the parallel level and constraint propagation at the sequential level.\footnote{This work
-is also in progress.}
+%Ideally, we would run our algorithm on some deeper instances from real kriegspiel games.  We are not aware of a
+%repository of such games.  Unfortunately, notation for kriegspiel is not standardized and there are several minor
+%variations in rules (i.e., with respect to the nature of referee announcements) that are unlikely to significantly to
+%impact the computability and scalability results but which nevertheless make it difficult to write an input reader that
+%converts the transcript of a game into a sequence of moves readable by our algorithm.  An alternative would be to play
+%some games ourselves.  Currently, the manual encoding of games is not difficult but is tedious.  Still, it would be nice
+%to have some games that go on for 40 or 50 moves and have positions where the information sets are of moderate size (on
+%the order of a few hundred thousand to a few million).
 
-There are certainly several places where the efficiency of the details of each node expansion could be improved.  Many
-of these would reduce the overall running time but would not necessarily be interesting from the standpoint of
-evaluating the efficiency and isoefficiency of parallelization.  For example, in checking to see if a position leaves a
-player in check, we currently utilize existing helper functions that generate possible moves for the opponent.  It would
-be possible to write a more specialized function that focuses only on the position of the king in question and looks
-only at the squares along its rank, file, diagonals, and knight-edges for threats.  There are also some memory
-allocation issues that could be improved. 
+%The information set generation algorithm that we have implemented here is the most straightforward one and is alluded to
+%in~\cite{parker05game} and~\cite{russell05efficient}.  It is analogous to the ``expand-at-the-tip'' strategy for the
+%Hamiltonian Circuit problem.  An alternative information set generation algorithm is described
+%in~\cite{richards09information} (but not implemented in parallel) and could potentially improve the search efficiency
+%greatly by exploiting variable ordering.  This would be analogous to the disconnected edge-pairs\footnote{This is what we
+%referred to as ``algorithm 2'' in class.} heuristic for the Hamiltonian Circuit problem.  Rather than search from the
+%root node going forward, this algorithm would seek opportunities for pruning based on the propagation of logical
+%consequences from each move both forward and backward in time.  This, incidentally, is more consistent with the way
+%human players would analyze the game.  For example, if a player's proposed bishop move is rejected and the bishop is
+%sufficiently removed from its own king, then the player may infer that one of his opponent's pieces is along that
+%rejected path.  At least one of those spaces must have been the destination of a prior move by the opponent.  If a
+%recent move by that bishop crossed the same path, then that would be hard evidence that those squares were empty at the
+%time.  And therefore, the arrival of the opponent's piece must have been between the previous (successful) bishop move
+%and the current (unsuccessful) bishop move.  To implement this algorithm, we envision the use of planning graph type
+%data structures~\cite{blum97fast}.  Planning graphs have a sequence of alternating levels of state constraints and
+%action constraints.  State constraints would be of the form $at(bishop,d4) \vee at(bishop,e6)$ or $!occupied(e4)$.
+%Action constraints would be of the form $move(knight,a4,c5) \vee move(knight,e6)$.  At a minimum, each level would
+%require a data structure with a bit for each possible action/state.  Propagating the constraints would require much of
+%the same machinery used in STRIPS-like planning algorithms~\cite{chen05solving}, and one of the many knobs that would
+%need to be tuned would be the depth of the propagation for each constraint.  (Should the consequences of a known action
+%or non-action be propagated one move into the future and one move into the past?  More?  Less?)  Additionally, there
+%would be a significant and interesting tradeoff in the effectiveness of pruning and the size of the data
+%structures that would have to be encoded in each chare.  The best algorithm might be a hybrid strategy that does forward
+%propagation from the root at the parallel level and constraint propagation at the sequential level.\footnote{This work
+%is also in progress.}
+%
+%There are certainly several places where the efficiency of the details of each node expansion could be improved.  Many
+%of these would reduce the overall running time but would not necessarily be interesting from the standpoint of
+%evaluating the efficiency and isoefficiency of parallelization.  For example, in checking to see if a position leaves a
+%player in check, we currently utilize existing helper functions that generate possible moves for the opponent.  It would
+%be possible to write a more specialized function that focuses only on the position of the king in question and looks
+%only at the squares along its rank, file, diagonals, and knight-edges for threats.  There are also some memory
+%allocation issues that could be improved. 
 
 \Section{Conclusion}
 We have shown that information set generation for kriegspiel can be efficiently parallelized.  The opportunities for
