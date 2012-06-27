@@ -98,8 +98,8 @@ Urbana, IL\\ {mdrichar, gupta59, sarood1, kale}@illinois.edu\\
 Information Set Generation is the identification of the set of paths in an imperfect information game tree that are
 consistent with a player's observations.  The ability to reason about the possible game history is critical to the
 performance of game playing agents.  In this work, we address the parallelization of information set generation in the context
-of kriegspiel (partially observable chess).  We implement the algorithm on top of a general purpose combinatorial search
-engine and discuss its performance under different load balancing strategies and with different grainsize parameters.
+of Kriegspiel (partially observable chess).  We implement the algorithm on top of a general purpose combinatorial search
+engine and discuss its performance under different load balancing strategies and with different grain-size parameters.
 We achieve speedups of over 500 on 1024 processors, far exceeding previous scalability results for game tree search applications.
 \end{abstract}
 
@@ -120,7 +120,7 @@ can use to identify nodes in the game tree that are consistent with their
 observations~\cite{richards12reasoning}.  Because the operation is relatively
 expensive and may be repeatedly applied by a decision-making agent, its
 efficiency is a key factor in an agent's overall performance.  In this work, we
-show that ISG for kriegspiel can be efficiently parallelized.
+show that ISG for Kriegspiel can be efficiently parallelized.
 
 The term {\em belief state} is sometimes used interchangeably with information set to refer to a probability
 distribution over possible worlds.  The latter term comes from the game theory community and is preferred here.  A node
@@ -136,7 +136,7 @@ that each of these permutations of unseen cards is equally probable, as betting 
 point would be affected by the quality of those players' cards.  But the set of {\em possible} hands for all of the
 opponents is easy to conceive and enumerate.
 
-In the game of kriegspiel, information set generation is much more complicated.  The player knows the opponent's position with
+In the game of Kriegspiel, information set generation is much more complicated.  The player knows the opponent's position with
 certainty when the game begins, but after the initial move there may be varying levels of uncertainty about the location
 of the opponent's pieces.  Unlike poker, it is not possible to simply permute all of the opponent's possible pieces over
 all of the squares not occupied by the player's own pieces.  A configuration of pieces for the opponent is only valid if
@@ -145,7 +145,7 @@ combinatorial search problem.
 
 Information set generation is not the same problem as solving a game tree, although it is arguably a necessary
 subroutine for quality game play in imperfect information games.  In this work, we describe an approach to generating
-information sets for the game of kriegspiel. 
+information sets for the game of Kriegspiel. 
 
 The paper is organized as follows.  In Section~\ref{Background}, we review necessary background information, including the rules of kriegspiel and the nature of the information set generation problem.  In Section ~\ref{ParSSSE}, we describe the {\sc Charm++} Parallel State Space Search Engine (ParSSSE) platform.  We then provide our experimental results in Section~\ref{Results}.  Related work is discussed in Section~\ref{Related}.  We conclude with a discussion of future work.
 
@@ -633,7 +633,7 @@ strategies by overriding {\sc Charm++} task dispersal functions.
 In order to understand the effect of various parameters such as grain size and load balancing, we first evaluated the scalability of our implementation using a randomly selected problem instance. Next, we show that our implementation performs equally well for instances from actual games.
 \subsection{Analysis using Random Instance}
 The performance results reported in
-this section were obtained by running our program on Bleuprint with up to 1024 processors. TODO: Blueprint H/w or citation
+this section were obtained by running our program on Blueprint with up to 1024 processors. TODO: Blueprint H/w or citation
 
 Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
 the size of the information set was about 4.5 million.  This instance is not necessarily representative of all games or
@@ -699,12 +699,12 @@ redistribution.  This is probably also related to the fact that we are doing an 
 \end{minipage}
 \vspace{-0.1in}
 \caption{(Top) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
-(Bottom) Same data with a linear y-axis for the running time (to help see the isoefficiency.)}
+(Bottom) Same data with a linear y-axis for the running time (to help see the Iso-efficiency.)}
 \vspace{-0.2in}
 \label{3depths}
 \end{figure}
 
-We next attempted to measure the isoefficiency [TODO:cite] of the problem---how is efficiency of the parallelization of the
+We next attempted to measure the Iso-efficiency [TODO:cite] of the problem---how is efficiency of the parallelization of the
 algorithm affected by {\em size} of the problem?  To test this, we varied the number of plies in the test instance from
 8 to 12. We used the work stealing load balancing strategy.  The results are shown in Figure~\ref{3depths}.   In the easiest case (depth 8), there isn't
 enough additional parallel work to justify the jump from 256 to 1024 processors, and performance actually degrades.
@@ -844,7 +844,7 @@ Our results compare favorably to previous work in parallel game tree search, sho
 
 For partially observable games, information set generation represents a different variety of tree search that does not suffer from speculative loss.  All of the nodes that are visited in parallel would have also been visited in a sequential run.  The key challenge for parallelizing information set generation is load balancing: some parts of the tree will be pruned at a higher level than others, resulting in a wide variation in cost for each subtree.  The {\sc Charm++/ParSSSE} framework is perfectly suited to handle the load balancing issues that this problem naturally presents.
 
-Note also that information set generation is just one subroutine needed to reason about partially observable games.  Once plausible game histories have been found, an agent may simulate some sequences of moves up to previous moves made by opponents and then recursively call the information set generation procedure from the perspective of the opponent.  This results in many parallel applications of information set generation. Furthermore, given a node in an informaion set, it is common for an agent to perform forward search on that node (e.g., using MCTS).  With these two additional levels of parallelism on top of the information set generation problem, it is conceivable that the problem of playing partially observable games could scale efficiently to millions of processors or more.
+Note also that information set generation is just one subroutine needed to reason about partially observable games.  Once plausible game histories have been found, an agent may simulate some sequences of moves up to previous moves made by opponents and then recursively call the information set generation procedure from the perspective of the opponent.  This results in many parallel applications of information set generation. Furthermore, given a node in an information set, it is common for an agent to perform forward search on that node (e.g., using MCTS).  With these two additional levels of parallelism on top of the information set generation problem, it is conceivable that the problem of playing partially observable games could scale efficiently to millions of processors or more.
 \begin{table}[tphb]
 \centering
 \begin{tabular}{lrrc}
@@ -893,7 +893,7 @@ that this set had more than 4 million members.)
 %tree search can be effective, even against humans with vastly superior abstract reasoning capabilities, provided that
 %significant computational resources are available and wisely used~\cite{campbell02deep}.
 
-%Russell and Wolfe have performed some analyses on kriegspiel positions for which it possible to prove that one player
+%Russell and Wolfe have performed some analysis on kriegspiel positions for which it possible to prove that one player
 %has a forced win (that is, regardless of the configuration of the opponent's unseen pieces, the player has a sequence of
 %moves that is guaranteed to produce a checkmate)~\cite{russell05efficient, wolfe07exploiting}.  The authors assume
 %knowledge of the player's belief state.  They claim that under certain "aggressive" styles of play, it is uncommon for
