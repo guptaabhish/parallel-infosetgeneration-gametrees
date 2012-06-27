@@ -2,7 +2,7 @@
 \usepackage{latex8}
 \usepackage{times}
 \usepackage{url,hyperref}
-\usepackage{subfig}
+\usepackage{subfigure}
 \usepackage{tikz}
 \usepackage{examplep}
 \usepackage{moreverb}
@@ -68,7 +68,7 @@
 \title{Parallel Information Set Generation for Kriegspiel 
        }
 
-\author{Mark Richards, Abhishek Gupta, Osman Sarood and Laxmikant Kale\\
+\author{Mark Richards, Abhishek Gupta, Osman Sarood and Laxmikant V. Kale\\
 Department of Computer Science\\ 
 University of Illinois\\ 
 Urbana, IL\\ {mdrichar, gupta59, sarood1, kale}@illinois.edu\\
@@ -197,18 +197,21 @@ ultimately allowed by the referee would also be a legal move in chess.
 %\SubSection{Example}
 \begin{figure}[ht]
 \centering
-\begin{minipage}[b]{0.5\linewidth}
+\begin{minipage}[b]{0.45\linewidth}
+\centering
 \includegraphics[width=0.7\textwidth]{images/9B.png}
 \caption{Actual Position}
 \label{fig:figure1}
 \end{minipage}
 \hspace{0.5cm}
 \centering
-\begin{minipage}[b]{0.5\linewidth}
+\begin{minipage}[b]{0.45\linewidth}
+\centering
 \includegraphics[width=0.7\textwidth]{images/OneView.png}
 \caption{White's view}
 \label{fig:figure2}
 \end{minipage}
+\vspace{-0.2in}
 \end{figure}
 
 
@@ -290,8 +293,10 @@ moves.  For example, on move 9, black attempted three illegal moves.
 10. Qxf8++ {(1-0:)}
 \end{verbatim}
 \end{minipage}
+\vspace{-0.1in}
 \caption{Listing of a kriegspiel game resulting in checkmate by white after 10 moves.}
 \label{filteredlisting}
+\vspace{-0.2in}
 \end{figure}
 
 The listing of a sequence of moves from the perspective of one player lists all of that player's moves exactly and
@@ -342,9 +347,11 @@ black's observations up to that point.
 %1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
 %1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
 \end{mytinylisting}
+\vspace{-0.2in}
 \caption{Abbreviated output from example game.  Generating information sets for black after five turns by each player.
 From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
 \label{abbrevoutput}
+\vspace{-0.3in}
 \end{figure}
 
 %\begin{table}
@@ -621,134 +628,151 @@ important tasks are more likely to get done sooner.
 In addition to these strategies, a user may define its own load balancing
 strategies by overriding {\sc Charm++} task dispersal functions.
 
-%%We built our search on top of the same general search engine that we used in class.  The performance results reported in
-%%this section were obtained by running our program on Bleuprint with up to 1024 processors.
-%%
-%%Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
-%%the size of the information set was about 4.5 million.  (This instance is not necessarily representative of all games or
-%%states of the game, but it was not cherry-picked in any way.)  The table shows that the problem is indeed highly
-%%parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
-%%speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
-%%on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
-%%This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
-%%for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
-%%
-%%\begin{table}
-%%\centering
-%%\begin{tabular}{rrr}
-%%{\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
-%%1	&	1524	&	1\\
-%%2	&	812	&	1.88\\
-%%4	&	407	&	3.74\\
-%%8	&	208	&	7.32\\
-%%16	&	102	&	14.8\\
-%%32	&	53.2	&	28.7\\
-%%64	&	28.0	&	54.5\\
-%%128	&	14.9	&	102\\
-%%256	&	7.70	&	197\\
-%%512	&	4.59	&	331\\
-%%1024	&	2.64	&	576\\
-%%\end{tabular}
-%%\caption{Speedups for a randomly selected problem instance on 1--1024 processors.  The input observations were from the
-%%10th ply of the game tree and the size of the information set in this instance is 4,495,121.}
-%%\label{speedups}
-%%\end{table}
-%%
-%%\begin{figure}[h]
-%%\centering
-%%\includegraphics[width=0.7\columnwidth]{plots/3schemes.pdf}
-%%\caption{Experiments using different load balancing strategies.}
-%%\label{3schemes}
-%%\end{figure}
-%%
-%%In our next round of experiments, we set out to compare a few different load-balancing strategies for the problem.  We
-%%used the random, work stealing, and neighborhood balancing strategies that are available in the general purpose search
-%%engine.  These results are shown in Figure~\ref{3schemes}.  Our results show that there was actually very little
-%%variation in performance across the different strategies.  We did notice that across all of our experiments, the work
-%%stealing approach appeared to be consistently---if only marginally---better than the others.  Our hypothesis here is
-%%that perhaps the nodes are rarely starved for work.  In other words, perhaps the very nature of the problem means that
-%%the load is naturally well-balanced and that the load-balancer rarely needs to do a significant amount of
-%%redistribution.  This is probably also related to the fact that we are doing an all-solutions search. 
-%%
-%% 
-%%\begin{figure}[h]
-%%\centering
-%%\begin{minipage}{0.5\linewidth}
-%%\includegraphics[width=\columnwidth]{plots/3depths.pdf}
-%%\end{minipage}
-%%\centering
-%%\begin{minipage}{0.5\linewidth}
-%%\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
-%%\end{minipage}
-%%\caption{(Left) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
-%%(Right) Same data with a linear y-axis for the running time (to help see the isoefficiency.)}
-%%\label{3depths}
-%%\end{figure}
-%%
-%%We next attempted to measure the isoefficiency of the problem---how is efficiency of the parallelization of the
-%%algorithm affected by {\em size} of the problem?  To test this we varied the number of plies in the test instance from
-%%8 to 12. We used the work stealing load balancing strategy.  The results are shown in Table~\ref{3depths}.  The data are
-%%the same in both tables, but the one on the left uses a log-log scale.  In the easiest case (depth 8), there isn't
-%%enough additional parallel work to justify the jump from 256 to 1024 processors, and performance actually degrades.
-%%Other than that, however, we see consistent speedups as we increase the number of processors.  The plot on the right helps to
-%%illustrate the good isoefficiency of the problem.  As the size of the problem increases, the amount of parallelizable
-%%work available also increases, and therefore the steepness of the speed curve is higher for larger problem sizes, as the
-%%number of processors increases.
-%% 
-%%\begin{figure}[h]
-%%\centering
-%%\includegraphics[width=0.6\columnwidth]{plots/dep8.pdf}
-%%\caption{Grainsize control data for depth 8 problems.}
-%%\label{dep8}
-%%\end{figure}
-%% 
-%%\begin{figure}[h]
-%%\centering
-%%\includegraphics[width=0.6\columnwidth]{plots/dep10.pdf}
-%%\caption{Grainsize control data for depth 10 problems.}
-%%\label{dep10}
-%%\end{figure}
-%% 
-%%\begin{figure}[h]
-%%\centering
-%%\includegraphics[width=0.6\columnwidth]{plots/dep12.pdf}
-%%\caption{Grainsize control data for depth 12 problems.}
-%%\label{dep12}
-%%\end{figure}
-%%
-%%Finally, we ran some experiments to measure the effect of grainsize on the problem.  The results are shown in
-%%Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet spot'' for each problem size.  (At least it is
-%%clear for this particular instance.  It is possible that there would be different behavior on different problem
-%%instances.)  When the grainsize is too small, the overall computation is hampered by excessive parallel overhead
-%%(communication, queueing of nodes to expand, load balancing operations).  On the other hand, when the grain size is too
-%%large, it becomes too difficult to ensure that all processors are busy and processors are not idling with no work to do
-%%while a small number of processors are busy doing large-sized chunks of work.  
-%%
-%%In our experiments, the optimal grainsize is clearly related to the size of the problem, the depth of the search tree.
-%%The optimal sequential threshold seems to be $2--4$ less than the problem depth.  Since the depth of all solutions is
-%%the same for each problem instance, this means that the number of levels that should be searched sequentially is fairly
-%%consistent across problem sizes.  We noted that the number of solutions found---in other words, the size of the
-%%information sets---is typically fairly large with respect to the total number of nodes expanded.  (We don't have hard
-%%figures, but we estimate that it was often $30-40\%$).  This high density of solutions limits the variability that can
-%%be present in the amount of work to be done at the nodes representing the last few levels of the tree.  This means that
-%%the best grainsize is also likely to be fairly predictable.  
 
 \Section{Performance Results}\label{Results}
+In order to understand the effect of various parameters such as grain size and load balancing, we first evaluated the scalability of our implementation using a randomly selected problem instance. Next, we show that our implementation performs equally well for instances from actual games.
+\subsection{Analysis using Random Instance}
+The performance results reported in
+this section were obtained by running our program on Bleuprint with up to 1024 processors. TODO: Blueprint H/w or citation
+
+Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
+the size of the information set was about 4.5 million.  This instance is not necessarily representative of all games or
+states of the game, but it was not cherry-picked in any way. The table shows that the problem is indeed highly
+parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
+speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
+on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
+This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
+for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
+
+\begin{table}
+\centering
+\begin{tabular}{rrr}
+{\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
+1	&	1524	&	1\\
+2	&	812	&	1.88\\
+4	&	407	&	3.74\\
+8	&	208	&	7.32\\
+16	&	102	&	14.8\\
+32	&	53.2	&	28.7\\
+64	&	28.0	&	54.5\\
+128	&	14.9	&	102\\
+256	&	7.70	&	197\\
+512	&	4.59	&	331\\
+1024	&	2.64	&	576\\
+\end{tabular}
+\vspace{-0.1in}
+\caption{Speedups for a randomly selected problem instance on 1--1024 processors.  The input observations were from the
+10th ply of the game tree and the size of the information set in this instance is 4,495,121.}
+\label{speedups}
+\vspace{-0.3in}
+\end{table}
+
+\subsubsection{Effect of Load Balancing}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\columnwidth]{plots/3schemes.pdf}
+\vspace{-0.1in}
+\caption{Effect of load balancing strategy}
+\label{3schemes}
+\vspace{-0.2in}
+\end{figure}
+
+In our next round of experiments, we set out to compare a few different load-balancing strategies for the problem.  We
+used the random, work stealing, and neighborhood balancing strategies that are available in the general purpose search
+engine.  These results are shown in Figure~\ref{3schemes}.  Our results show that there was actually very little
+variation in performance across the different strategies.  We did notice that across all of our experiments, the work
+stealing approach appeared to be consistently---if only marginally---better than the others.  Our hypothesis here is
+that perhaps the nodes are rarely starved for work.  In other words, perhaps the very nature of the problem means that
+the load is naturally well-balanced and that the load-balancer rarely needs to do a significant amount of
+redistribution.  This is probably also related to the fact that we are doing an all-solutions search. 
+
+ 
+\subsubsection{Iso-efficiency}
+\begin{figure}[h]
+\centering
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\columnwidth]{plots/3depths.pdf}
+\end{minipage}
+\centering
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
+\end{minipage}
+\vspace{-0.1in}
+\caption{(Top) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
+(Bottom) Same data with a linear y-axis for the running time (to help see the isoefficiency.)}
+\vspace{-0.2in}
+\label{3depths}
+\end{figure}
+
+We next attempted to measure the isoefficiency [TODO:cite] of the problem---how is efficiency of the parallelization of the
+algorithm affected by {\em size} of the problem?  To test this, we varied the number of plies in the test instance from
+8 to 12. We used the work stealing load balancing strategy.  The results are shown in Figure~\ref{3depths}.   In the easiest case (depth 8), there isn't
+enough additional parallel work to justify the jump from 256 to 1024 processors, and performance actually degrades.
+Other than that, however, we see consistent speedups as we increase the number of processors.  The plot on the right helps to
+illustrate the good isoefficiency of the problem.  As the size of the problem increases, the amount of parallelizable
+work available also increases, and therefore the steepness of the speed curve is higher for larger problem sizes, as the
+number of processors increases.
+ 
+\subsubsection{Effect of Grain Size}
+
+\begin{figure*}[!ht]
+\centering
+\subfigure[Depth 8]{
+\includegraphics[width=2in]{plots/dep8.pdf}
+\label{dep8}
+} 
+\subfigure[Depth 10]{
+\includegraphics[width=2in]{plots/dep10.pdf}
+\label{dep10}
+} 
+\subfigure[Depth 12]{
+\includegraphics[width=2in]{plots/dep12.pdf}
+\label{dep12}
+} 
+\vspace{-0.1in}
+\caption{Grain Size Control for different problem sizes}
+%\vspace{-0.1in}
+\label{fig:dep}
+\vspace{-0.1in}
+\end{figure*}
+
+Next, we evaluate the effect of grainsize on the problem execution time.  The results are shown in
+Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet spot'' for each problem size.  (At least it is
+clear for this particular instance.  It is possible that there would be different behavior on different problem
+instances.)  When the grainsize is too small, the overall computation is hampered by excessive parallel overhead
+(communication, queueing of nodes to expand, load balancing operations).  On the other hand, when the grain size is too
+large, it becomes too difficult to ensure that all processors are busy and processors are not idling with no work to do
+while a small number of processors are busy doing large-sized chunks of work.  
+
+In our experiments, the optimal grainsize is clearly related to the size of the problem, the depth of the search tree.
+The optimal sequential threshold seems to be $2--4$ less than the problem depth.  Since the depth of all solutions is
+the same for each problem instance, this means that the number of levels that should be searched sequentially is fairly
+consistent across problem sizes.  We noted that the number of solutions found---in other words, the size of the
+information sets---is typically fairly large with respect to the total number of nodes expanded.  (We don't have hard
+figures, but we estimate that it was often $30-40\%$).  This high density of solutions limits the variability that can
+be present in the amount of work to be done at the nodes representing the last few levels of the tree.  This means that
+the best grainsize is also likely to be fairly predictable.  
+
+
+\subsection{Real Game Instance}
+\begin{figure}[ht]
+ \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem4.pdf} %
+\caption{Kriegspiel position from Virgil-David 1969 with information set size 764,209.}
+\label{prob4} 
+\vspace{-0.2in}
+\end{figure}
+
+\begin{figure}[ht]
+ \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem5.pdf} %
+\caption{Kriegspiel position from Game 6 of Kbot-Darkboard at the 2006 Computer Chess championship.  Information set size is 5,099,257.}
+\label{prob5} 
+\vspace{-0.2in}
+\end{figure}
+
+
 We also evaluated our information set generation routine on 40 positions from actual kriespiel games, including human vs. human and computer vs. computer.  Many of these were trivial to solve in a few seconds or less on a desktop computer.  The running times and speedups for two of the more challenging instances are shown in Tables~\ref{prob4}--\ref{tab:prob5speedups}.  These tables show the results for runs on one to $1024$ cores.  Each column corresponds to a different parameter.  In this case, the grainsize is the number of levels of the search tree that are searched in parallel.  Up to that threshold, each node that is generated spawns a new piece of work, which the {\sc Charm++} runtime schedules to execute on one of the processing elements according to its load balancing strategy.  Above the threshold the entire subtree is searched to completion on a single processor, with no additional parallel overhead. 
 
 Note that the optimal grainsize varies for the different numbers of cores and the pattern is relatively consistent across problem instances.  The optimal grainsize increases as the number of cores increases.  This makes sense, because as this parameter grows, the number of distinct pieces of work increases.  When the number of pieces of work per processor is high, much of the overhead of parallelization is wasted.  But as the number of cores increases, the work can be efficiently broken up into smaller pieces and doled out to all the cores.  With more pieces of work, it becomes easier to balance the load.
-
-\begin{figure}[htpb]
- \centering \includegraphics[scale=0.4]{images/KriegspielProblem4.pdf} %
-\caption{Kriegspiel position from Virgil-David 1969 with information set size 764,209.}
-\label{prob4} 
-\end{figure}
-
-\begin{figure}[htpb]
- \centering \includegraphics[scale=0.4]{images/KriegspielProblem5.pdf} %
-\caption{Kriegspiel position from Game 6 of Kbot-Darkboard at the 2006 Computer Chess championship.  Information set size is 5,099,257.}
-\label{prob5} 
-\end{figure}
 
 \begin{table}[tphb]
 \centering
@@ -762,6 +786,7 @@ PE/G & 2 & 4 & 6 & 8 \\
 1024 & 26 & 3.8 & 0.64 & {\bf 0.40}
 \end{tabular}
 \caption{Running times, in seconds, to find full information set of size 764,209 at position 10 of Virgil-David 1969. Optimal grainsize (G) for each number of cores (PE) is shown in bold}
+\vspace{-0.2in}
 \label{tab:prob4}
 \end{table}
 
@@ -777,6 +802,7 @@ PE/G & 2 & 4 & 6 & 8 \\
 1024 & 58 & 5.5 & 1.3 & {\bf 1.2} \\
 \end{tabular}
 \caption{Running times, in seconds, to find full information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006. Optimal grainsize for each number of cores is shown in bold.}
+\vspace{-0.2in}
 \label{tab:prob5}
 \end{table}
 
@@ -792,6 +818,7 @@ PE/G & 2 & 4 & 6 & 8 \\
 1024 & 6.61 & 46.5 & 276 & {\bf 443}
 \end{tabular}
 \caption{Speedups for Virgil-David 1969.}
+\vspace{-0.2in}
 \label{tab:prob4speedups}
 \end{table}
 
@@ -807,6 +834,7 @@ PE/G & 2 & 4 & 6 & 8 \\
 1024 & 10.6 & 111 & 464 & {\bf 536}
 \end{tabular}
 \caption{Speedups for Kbot-Darkboard 2006.}
+\vspace{-0.2in}
 \label{tab:prob5speedups}
 \end{table}
 
@@ -827,6 +855,7 @@ Richards \etal & Kriegspiel & 2012 & 178(256) \\
 Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
 \end{tabular}
 \caption{Best Speedups reported for game tree applications.}
+\vspace{-0.2in}
 \label{bestspeedups}
 \end{table}
 
@@ -855,38 +884,26 @@ generating the full information set took over 25 minutes on a single processor. 
 search engine on a parallel machine (1024 processors), we were able to generate the full set in just 2.9 seconds.  (Note
 that this set had more than 4 million members.)  
 
-Li gives an overview of kriegspiel and discusses strategy from the perspective of human players~\cite{li94chess}.  He
-walks through the analysis of several actual games between two human players and discusses the inferences that each
-player can and should make at each position.  As in chess, human players are able to reason about the game at an
-abstract level; they tend to focus on a small number of critical possibilities and to emphasize the most important
-pieces and squares in each position.  Computer agents, lacking such sophistication, nevertheless have some advantages
-when it comes to brute force search strategies. Programs such Deep Blue have shown that a brute force approach to game
-tree search can be effective, even against humans with vastly superior abstract reasoning capabilities, provided that
-significant computational resources are available and wisely used~\cite{campbell02deep}.
+%Li gives an overview of kriegspiel and discusses strategy from the perspective of human players~\cite{li94chess}.  He
+%walks through the analysis of several actual games between two human players and discusses the inferences that each
+%player can and should make at each position.  As in chess, human players are able to reason about the game at an
+%abstract level; they tend to focus on a small number of critical possibilities and to emphasize the most important
+%pieces and squares in each position.  Computer agents, lacking such sophistication, nevertheless have some advantages
+%when it comes to brute force search strategies. Programs such Deep Blue have shown that a brute force approach to game
+%tree search can be effective, even against humans with vastly superior abstract reasoning capabilities, provided that
+%significant computational resources are available and wisely used~\cite{campbell02deep}.
 
-Russell and Wolfe have performed some analyses on kriegspiel positions for which it possible to prove that one player
-has a forced win (that is, regardless of the configuration of the opponent's unseen pieces, the player has a sequence of
-moves that is guaranteed to produce a checkmate)~\cite{russell05efficient, wolfe07exploiting}.  The authors assume
-knowledge of the player's belief state.  They claim that under certain "aggressive" styles of play, it is uncommon for
-information sets to exceed 10,000 nodes in size.  They throw out (i.e., do not analyze) any positions that exceed this
-threshold.  
+%Russell and Wolfe have performed some analyses on kriegspiel positions for which it possible to prove that one player
+%has a forced win (that is, regardless of the configuration of the opponent's unseen pieces, the player has a sequence of
+%moves that is guaranteed to produce a checkmate)~\cite{russell05efficient, wolfe07exploiting}.  The authors assume
+%knowledge of the player's belief state.  They claim that under certain "aggressive" styles of play, it is uncommon for
+%information sets to exceed 10,000 nodes in size.  They throw out (i.e., do not analyze) any positions that exceed this
+%threshold.  
 
 %In our experiments, we have found positions in which the size of the information set is many tens of millions.  Our goal
 %is to develop strategies that are amenable to use in this more general setting.   In other words, rather than being able
 %to analyze positions only at the beginning or end of the game (when the size of the information set tends to be
 %smaller), we want to be able to develop a strategy that can be used in the middle of the game as well.  game). 
-
-Nance \etal, approach the game from the perspective of {\em logical filtering.}~\cite{nance06reasoning}  The goal of
-logical filtering is to maintain a compact logical representation of an agent's belief state.  Recall that a belief
-state is a probability distribution over the possible current states of the world.  A belief state for kriegspiel might
-take the form of $(at(whitepawn,a2) \wedge at whitepawn(b2) \ldots \wedge at(whiterook,h1)) \vee (at(whitepawn,a3)
-\wedge \ldots \wedge at(whiterook,h1)) \ldots$  For even moderately sizes information sets, such
-representations can become unwieldy in terms of storage and the cost of updating.  Furthermore, reasoning with such
-representations often requires the use of some theorem-proving mechanism to run logical queries, such
-as $at(blackking,a3?)$. Nance et al. develop some strategies to maintain compact representations under
-sequences of actions and observations.  They give a theoretical analysis of the kinds of problems that can be treated in
-this way.  Unfortunately, kriegspiel in its full complexity is beyond the scope of their algorithm.  In order to reason
-about the belief states in the game, they must assume knowledge of the particular kind of piece that move in each turn.
 
 The information set generation approach that we have presented is certainly also computationally expensive.  And
 representing a full information set (e.g., as a list of sequences of moves that encode a path from the start state to
