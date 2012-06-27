@@ -68,10 +68,10 @@
 \title{Parallel Information Set Generation for Kriegspiel 
        }
 
-\author{Mark Richards \and Abhishek Gupta \and Osman Sarood \and Laxmikant Kale\\
-%Department of Computer Science\\ 
-%University of Illinois\\ 
-%Urbana, IL\\ mdrichar@illinois.edu\\
+\author{Mark Richards, Abhishek Gupta, Osman Sarood and Laxmikant Kale\\
+Department of Computer Science\\ 
+University of Illinois\\ 
+Urbana, IL\\ {mdrichar, gupta59, sarood1, kale}@illinois.edu\\
 % For a paper whose authors are all at the same institution, 
 % omit the following lines up until the closing ``}''.
 % Additional authors and addresses can be added with ``\and'', 
@@ -149,8 +149,10 @@ information sets for the game of kriegspiel.
 
 The paper is organized as follows.  In Section~\ref{Background}, we review necessary background information, including the rules of kriegspiel and the nature of the information set generation problem.  In Section ~\ref{ParSSSE}, we describe the {\sc Charm++} Parallel State Space Search Engine (ParSSSE) platform.  We then provide our experimental results in Section~\ref{Results}.  Related work is discussed in Section~\ref{Related}.  We conclude with a discussion of future work.
 
-\Section{Background}\label{Background}
-\subsection{Kriegspiel}
+%\Section{Information Set Generation}
+\Section{Background: Kriegspiel}
+Information Set Generation is a widely adopted operation used in game trees search. Here, we present our techniques and results in the context of a particular game - Kriegspiel. However, the techniques and framework presented in this paper is general and can be applied to other imperfect games for generating information set.
+%\Section{Background: Kriegspiel}
 Kriegspiel, or partially observable chess,  was invented by Henry Michael Temple in 1899.  Historically, the
 game has required three parties: two competing players and one referee.  Today,
 players often compete over a computer network, with the role of the referee
@@ -192,7 +194,7 @@ In general, any move that is legal in a regular chess match may be at least
 attempted by a player in Kriegspiel.  And any Kriegspiel move that is
 ultimately allowed by the referee would also be a legal move in chess.    
 
-\SubSection{Example}
+%\SubSection{Example}
 \begin{figure}[ht]
 \centering
 \begin{minipage}[b]{0.5\linewidth}
@@ -236,7 +238,8 @@ ultimately allowed by the referee would also be a legal move in chess.
 %\caption{Listing of a kriegspiel game resulting in checkmate by white after 10 moves.}
 %\end{figure}
 
-\subsection{Information Set Generation}
+\Section{Information Set Generation}
+%\subsection{Information Set Generation}
 The concept of information sets is perhaps best explained through an example. 
 Figure~\ref{listing} and show a full listing and the associated pictorial progression of an actual
 kriegspiel game~\cite{li94chess}.  We have adapted the notation used by Wolfe for Berkeley Kriegspiel.  Odd (resp. even) moves are for white (resp. black).  The actual move is shown
@@ -401,8 +404,8 @@ From this, black can infer that there is definitely a white bishop at g5 and a w
 %\end{table}
 
    
-{The Information Set Generation Algorithm}
-ISG can be formulated as a combinatorial search problem.  The input to the algorithm is a list
+\textbf{The Information Set Generation Algorithm}
+(ISG) can be formulated as a combinatorial search problem.  The input to the algorithm is a list
 of observations for one player in a kriegspiel game.    
 
 The nodes in the search tree at depth $n$ correspond possible to possible sequences of $n$ plies from the start state.
@@ -523,9 +526,10 @@ tests, then a solution has been found and is added to the information set (line 
 \label{codelisting}
 \end{algorithmic}
 \end{boxedminipage}
+\caption{Algorithm}
 \end{figure}
 
-\Section{Charm++ and ParSSSE}\label{ParSSSE}
+\Section{Parallel Implementation using Charm++ and ParSSSE}\label{ParSSSE}
 We built our search engine on top of the {\sc Charm++} run-time
 system for parallel processing~\cite{kale93charm,kale09charm}.  {\sc Charm++}
 is an extension to the C++ programming language that provides
@@ -891,10 +895,10 @@ also highly scalable.  Furthermore, contrary to the approach in~\cite{nance06rea
 adaptable to sampling algorithms.  Given a sample size that matches available memory, any single sequence of moves is
 readily extractable without the computational expense of a theorem prover or SAT solver.
 
-\Section{Conclusion Future Work}
-We have shown that information set generation for kriegspiel can be efficiently parallelized in a way that scales up to at least 1024 processors.
+%\Section{Conclusion Future Work}
+%We have shown that information set generation for kriegspiel can be efficiently parallelized in a way that scales up to at least 1024 processors.
 
-A key line of future research is to use our ISG routine as part of a full Kriegspiel play.  The ISG method itself could be updated using constraint-satisfaction techniques outlined in ~\cite{richards12information}, which improve pruning performance in the search space by incorporating information from all observations in the list at each search step, instead of performing depth-first search.   The use of ISG-based opponent modeling to improve overall decision making is described in ~\cite{richards12reasoning}. 
+%A key line of future research is to use our ISG routine as part of a full Kriegspiel play.  The ISG method itself could be updated using constraint-satisfaction techniques outlined in ~\cite{richards12information}, which improve pruning performance in the search space by incorporating information from all observations in the list at each search step, instead of performing depth-first search.   The use of ISG-based opponent modeling to improve overall decision making is described in ~\cite{richards12reasoning}. 
 
 %determined by how well that information improves a player's decision-making capabilities.  We noted earlier that a
 %common use of information sets is to estimate the value of a move by averaging the estimated value of the associated
@@ -949,7 +953,7 @@ A key line of future research is to use our ISG routine as part of a full Kriegs
 %only at the squares along its rank, file, diagonals, and knight-edges for threats.  There are also some memory
 %allocation issues that could be improved. 
 
-\Section{Conclusion}
+\Section{Conclusion and Future Work}
 We have shown that information set generation for kriegspiel can be efficiently parallelized.  The opportunities for
 parallelism increase as the problem size increases.  Our algorithm has performed well on problems with information sets
 with as many as 65 million nodes---much larger than any other treatment of the problem that we are aware of.  Because
