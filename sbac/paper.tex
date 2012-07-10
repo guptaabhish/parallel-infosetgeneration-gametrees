@@ -632,7 +632,6 @@ strategies by overriding {\sc Charm++} task dispersal functions.
 
 \Section{Performance Results}\label{Results}
 
-
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrr}
@@ -658,7 +657,7 @@ strategies by overriding {\sc Charm++} task dispersal functions.
 In order to understand the effect of various parameters such as grain size and load balancing, we first evaluated the scalability of our implementation using a randomly selected problem instance. Next, we show that our implementation performs equally well for instances from actual games.
 \subsection{Analysis using Random Instance}
 The performance results reported in
-this section were obtained by running our program on Blueprint with up to 1024 processors. TODO: Blueprint H/w or citation
+this section were obtained by running our program on Blueprint with up to 1024 processors. This system was composed of 120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was decomissioned in June 2011 and is no longer in operation.
 
 Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
 the size of the information set was about 4.5 million.  This instance is not necessarily representative of all games or
