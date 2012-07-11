@@ -1,6 +1,8 @@
-\documentclass[times, 10pt,twocolumn]{article} 
-\usepackage{latex8}
-\usepackage{times}
+%\documentclass[times, 10pt,twocolumn]{article}
+%\documentclass[conference]{IEEEtran}
+\documentclass[10pt, conference, compsocconf]{IEEEtran} 
+%\usepackage{latex8}
+%\usepackage{times}
 \usepackage{url,hyperref}
 \usepackage{subfigure}
 \usepackage{tikz}
@@ -105,7 +107,7 @@ engine and discuss its performance under different load balancing strategies and
 We achieve speedups of over 500 on 1024 processors, far exceeding previous scalability results for game tree search applications.
 \end{abstract}
 
-\Section{Introduction}
+\section{Introduction}
 In imperfect information games, players do not have access to full knowledge of
 the world. Examples of imperfect information include hidden cards in
 Poker~\cite{billings02challenge} or Bridge~\cite{ginsberg96partition}, hidden
@@ -149,7 +151,7 @@ In this work, we show that ISG for Kriegspiel can be efficiently parallelized. T
 The paper is organized as follows.  In Section~\ref{Background}, we review necessary background information, including the rules of kriegspiel. Next, in Section~\ref{info} we describe the nature of the information set generation problem and the algorithm used.  In Section~\ref{ParSSSE}, we describe our parallel implementation, including the {\sc Charm++} Parallel State Space Search Engine (ParSSSE) platform.  We then provide our experimental results in Section~\ref{Results}.  Related work is discussed in Section~\ref{Related}.  We conclude with a discussion of future work.
 
 %\Section{Information Set Generation}
-\Section{Background: Kriegspiel}
+\section{Background: Kriegspiel}
 \label{Background}
 Information Set Generation is a widely adopted operation used in game trees search. Here, we present our techniques and results in the context of a particular game - Kriegspiel. However, the techniques and framework presented in this paper is general and can be applied to other imperfect games for generating information set.
 %\Section{Background: Kriegspiel}
@@ -241,7 +243,7 @@ ultimately allowed by the referee would also be a legal move in chess.
 %\caption{Listing of a kriegspiel game resulting in checkmate by white after 10 moves.}
 %\end{figure}
 
-\Section{Information Set Generation}
+\section{Information Set Generation}
 \label{info}
 %\subsection{Information Set Generation}
 The concept of information sets is perhaps best explained through an example. 
@@ -537,7 +539,7 @@ tests, then a solution has been found and is added to the information set (line 
 %\label{codelisting}
 %\end{figure}
 
-\Section{Parallel Implementation using Charm++ and ParSSSE}\label{ParSSSE}
+\section{Parallel Implementation using Charm++ and ParSSSE}\label{ParSSSE}
 We built our search engine on top of the {\sc Charm++} run-time
 system for parallel processing~\cite{kale93charm,kale09charm}.  {\sc Charm++}
 is an extension to the C++ programming language that provides
@@ -630,7 +632,7 @@ In addition to these strategies, a user may define its own load balancing
 strategies by overriding {\sc Charm++} task dispersal functions.
 
 
-\Section{Performance Results}\label{Results}
+\section{Performance Results}\label{Results}
 
 \begin{table}[ht]
 \centering
@@ -696,15 +698,15 @@ redistribution.  This is probably also related to the fact that we are doing an 
 \begin{figure*}[!ht]
 \centering
 \subfigure[Depth 8]{
-\includegraphics[width=2.2in]{plots/dep8.pdf}
+\includegraphics[width=2.1in]{plots/dep8.pdf}
 \label{dep8}
 } 
 \subfigure[Depth 10]{
-\includegraphics[width=2.2in]{plots/dep10.pdf}
+\includegraphics[width=2.1in]{plots/dep10.pdf}
 \label{dep10}
 } 
 \subfigure[Depth 12]{
-\includegraphics[width=2.2in]{plots/dep12.pdf}
+\includegraphics[width=2.1in]{plots/dep12.pdf}
 \label{dep12}
 } 
 \vspace{-0.1in}
@@ -836,7 +838,7 @@ For partially observable games, information set generation represents a differen
 Note also that information set generation is just one subroutine needed to reason about partially observable games.  Once plausible game histories have been found, an agent may simulate some sequences of moves up to previous moves made by opponents and then recursively call the information set generation procedure from the perspective of the opponent.  This results in many parallel applications of information set generation. Furthermore, given a node in an information set, it is common for an agent to perform forward search on that node (e.g., using MCTS).  With these two additional levels of parallelism on top of the information set generation problem, it is conceivable that the problem of playing partially observable games could scale efficiently to millions of processors or more.
 
 
-\Section{Related Work}
+\section{Related Work}
 \label{Related}
 An overview of the theory of imperfect information games and other basic topics in game theory can be found
 in~\cite{kuhn03lectures} and~\cite{kuhn97classics}.  A technical explanation of the concept of information sets can be
@@ -948,7 +950,7 @@ readily extractable without the computational expense of a theorem prover or SAT
 %only at the squares along its rank, file, diagonals, and knight-edges for threats.  There are also some memory
 %allocation issues that could be improved. 
 
-\Section{Conclusion and Future Work}
+\section{Conclusion and Future Work}
 We have shown that information set generation for kriegspiel can be efficiently parallelized.  The opportunities for
 parallelism increase as the problem size increases.  Our algorithm has performed well on problems with information sets
 with as many as 65 million nodes---much larger than any other treatment of the problem that we are aware of.  Because
@@ -1413,7 +1415,7 @@ ordering heuristics.
 %%\label{verboseoutput}
 %%\end{figure}
 
-\bibliographystyle{latex8}
+\bibliographystyle{IEEEtran}
 \bibliography{paper}
 
 \end{document}
