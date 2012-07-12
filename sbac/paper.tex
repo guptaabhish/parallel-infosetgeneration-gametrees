@@ -710,19 +710,7 @@ the size of the information set in this instance is 4,495,121.}
 \label{speedups}
 \vspace{-0.3in}
 \end{table}
-In order to understand the effect of various parameters such as grain size and load balancing, we first evaluated the scalability of our implementation using a randomly selected problem instance. Next, we show that our implementation performs equally well for instances from actual games.
-\subsection{Analysis using Random Instance}
-The performance results reported in
-this section were obtained by running our program on Blueprint with up to 1024 processors. This system was composed of 120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was decomissioned in June 2011 and is no longer in operation.
 
-Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
-the size of the information set was about 4.5 million.  This instance is not necessarily representative of all games or
-states of the game, but it was not cherry-picked in any way. The table shows that the problem is indeed highly
-parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
-speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
-on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
-This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
-for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
 
 
 \subsubsection{Effect of Load Balancing}
