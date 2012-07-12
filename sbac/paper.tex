@@ -1,6 +1,8 @@
-\documentclass[times, 10pt,twocolumn]{article} 
-\usepackage{latex8}
-\usepackage{times}
+%\documentclass[times, 10pt,twocolumn]{article}
+%\documentclass[conference]{IEEEtran}
+\documentclass[10pt, conference, compsocconf]{IEEEtran} 
+%\usepackage{latex8}
+%\usepackage{times}
 \usepackage{url,hyperref}
 \usepackage{subfigure}
 \usepackage{tikz}
@@ -110,7 +112,7 @@ grainsize parameters.  We achieve speedups of over 500 on 1,024 processors, far
 exceeding previous scalability results for game tree search applications.
 \end{abstract}
 
-\Section{Introduction}
+\section{Introduction}
 In imperfect information games, players do not have access to full knowledge of
 the world. Examples of imperfect information include hidden cards in
 Poker~\cite{billings02challenge} or Bridge~\cite{ginsberg96partition}, hidden
@@ -165,16 +167,17 @@ parallel implementation of an information set generation algorithm for the game
 of Kriegspiel using problem instances from real games. Further, we demonstrate
 the effects of load balancing strategy and grainsize on parallel performance. 
 
-The paper is organized as follows.  In Section~\ref{Background}, we review
-necessary background material, including the rules of Kriegspiel and the nature
-of the information set generation problem.  In Section ~\ref{ParSSSE}, we
-describe the {\sc Charm++} Parallel State Space Search Engine (ParSSSE)
-platform.  We then provide our experimental results in Section~\ref{Results}.
-Related work is discussed in Section~\ref{Related}.  We conclude with a
-discussion of future work.
+The paper is organized as follows.  In Section~\ref{Kriegspiel}, we review
+necessary background material, including the rules of Kriegspiel. Next, in
+Section~\ref{info} we describe the nature of the information set generation
+problem and the algorithm used.  In Section~\ref{ParSSSE}, we describe our
+parallel implementation, including the {\sc Charm++} Parallel State Space
+Search Engine (ParSSSE) platform.  We then provide our experimental results in
+Section~\ref{Results}.  Related work is discussed in Section~\ref{Related}.  We
+conclude with a discussion of future work.
 
-%\Section{Information Set Generation}
-\Section{Kriegspiel}
+
+\section{Kriegspiel}\label{Kriegspiel}
 Information Set Generation is the process of identifying the nodes in an
 imperfect information game tree that are consistent with a player's
 observations~\cite{richards12information}. Here, we present our techniques and
@@ -182,7 +185,6 @@ results in the context of a particular game: Kriegspiel~\cite{li94chess}.
 However, the techniques and framework presented in this paper are general and
 can be applied to ISG in other imperfect information games.
 
-%\Section{Background: Kriegspiel}
 Kriegspiel, or partially observable chess,  was invented by Henry Michael
 Temple in 1899.  Historically, the game has required three parties: two
 competing players and one referee.  Today, players often compete over a
@@ -265,14 +267,15 @@ ultimately allowed by the referee would also be a legal move in chess.
 %\caption{Listing of a Kriegspiel game resulting in checkmate by white after 10 moves.}
 %\end{figure}
 
-\Section{Information Set Generation}
+\section{Information Set Generation}
+\label{info}
 %\subsection{Information Set Generation}
 The concept of information sets is perhaps best explained through an example. 
-Figure~\ref{listing} and show a full listing and the associated pictorial progression of an actual
-Kriegspiel game~\cite{li94chess}.  We have adapted the notation used by Wolfe for Berkeley Kriegspiel.  Odd (resp. even) moves are for white (resp. black).  The actual move is shown
+Figure~\ref{filteredlisting},~\ref{fig:figure1} and \ref{fig:figure2} show a full listing and the associated pictorial progression of an actual
+kriegspiel game~\cite{li94chess}.  We have adopted the notation used by Wolfe for Berkeley Kriegspiel.  Odd (resp. even) moves are for white (resp. black).  The actual move is shown
 first followed by a list of referee announcements.  Captures announcements are prefixed with an X and give the location
 of the captured piece.  Similarly, pawn tries announcements are prefixed with T.  Attempted moves that were ultimately
-declared illegal are shown in a list following the `:'.  For example at move 9, (Figure~\ref{fig:9W}--\ref{fig:9B}),
+declared illegal are shown in a list following the `:'.  For example at move 9, (Figure~\ref{filteredlisting}),
 black attempts to block a potential threat along the diagonal by moving a pawn to f6, then attempts to escape or capture
 a threat at f7.  When both of these attempts fail, black can infer that his king is being threatened by a protected
 bishop or queen at f7.  The attempt to move to e7 is black's way of finding out whether the threatening piece is a queen
@@ -446,8 +449,32 @@ found to be inconsistent with the actual observation given in the input, the
 subtree rooted at that node is pruned (i.e., search is discontinued along that
 path).  There are types of observations that must match in order for the state
 to be found: check status, pawn tries, and illegal moves available/attempted.
+\begin{figure}[htpb]
+\small
+%\begin{algorithm}
+\begin{boxedminipage}{\columnwidth}
+\begin{algorithmic}[1]
+\Function{DFS-Infoset}{$a_{1:t}$, $o_{1:T}^{(k)}$, $I$, $s$, $t$}
+  \If {$t > T$}
+    \State {$I \leftarrow I \cup a_{1:t}$} %\Comment{$a_{1:t}$ leads to $o_{1:T}$ for $P_k$; add it to the information set.}
+  \Else {
+    \For{\textbf{each} legal action $a$ at $s$}
+      \State {$s'$ = {\sc GetNextState}($s$,$a$)}\label{line:update}
+      \If {$s'.o_{t+1}^{(k)}=o_{t+1}^{(k)}$}
+        \State {{\sc DFS-Infoset}($a_{1:t}a$, $o_{1:T}^{(k)}$, $I$, $s'$, $t+1$)} 
+          %\Comment{ Recall that $N(a_{1:t}a) = T(T(a_{1:t}),a)$}
+      \EndIf
+    \EndFor
+  }\EndIf
+\EndFunction
+\label{codelisting1}
+\end{algorithmic}
+\end{boxedminipage}
+\caption{Algorithm}
+\end{figure}
 
-Figure~\ref{codelisting} shows the function at the heart of our information set generation algorithm.  The actual
+
+Figure~\ref{codelisting1} shows the function at the heart of our information set generation algorithm.  The actual
 observations can be viewed as global, read-only variables.  All solutions (i.e., all nodes in the information set) will
 be located at the same depth in the tree: the depth that is equal to the number of plies in the observation list.
 Referee announcements regarding pawn tries or a player being in check are made prior to a move.  The algorithm checks
@@ -536,32 +563,8 @@ tests, then a solution has been found and is added to the information set (line 
 %\label{codelisting}
 %\end{figure}
 
-\begin{figure}[htpb]
-\small
-%\begin{algorithm}
-\begin{boxedminipage}{\columnwidth}
-\begin{algorithmic}[1]
-\Function{DFS-Infoset}{$a_{1:t}$, $o_{1:T}^{(k)}$, $I$, $s$, $t$}
-  \If {$t > T$}
-    \State {$I \leftarrow I \cup a_{1:t}$} %\Comment{$a_{1:t}$ leads to $o_{1:T}$ for $P_k$; add it to the information set.}
-  \Else {
-    \For{\textbf{each} legal action $a$ at $s$}
-      \State {$s'$ = {\sc GetNextState}($s$,$a$)}\label{line:update}
-      \If {$s'.o_{t+1}^{(k)}=o_{t+1}^{(k)}$}
-        \State {{\sc DFS-Infoset}($a_{1:t}a$, $o_{1:T}^{(k)}$, $I$, $s'$, $t+1$)} 
-          %\Comment{ Recall that $N(a_{1:t}a) = T(T(a_{1:t}),a)$}
-      \EndIf
-    \EndFor
-  }\EndIf
-\EndFunction
-\label{codelisting}
-\end{algorithmic}
-\end{boxedminipage}
-\caption{Algorithm}
-\end{figure}
-
-\Section{Parallel Implementation using Charm++ and ParSSSE}\label{ParSSSE}
-We implemented our search engine on top of the {\sc Charm++} run-time
+\section{Parallel Implementation using Charm++ and ParSSSE}\label{ParSSSE}
+We built our search engine on top of the {\sc Charm++} run-time
 system for parallel processing~\cite{kale93charm,kale09charm}.  {\sc Charm++}
 is an extension to the C++ programming language that provides
 machine-independent infrastructure for parallel computation.  The language and
@@ -654,7 +657,7 @@ In addition to these strategies, a user may define its own load balancing
 strategies by overriding {\sc Charm++} task dispersal functions.
 
 
-\Section{Performance Results}\label{Results}
+\section{Performance Results}\label{Results}
 In order to understand the effect of various parameters such as grainsize and
 load balancing strategy, we first evaluated the scalability of our
 implementation using a randomly selected problem instance. Next, we show that
@@ -662,8 +665,9 @@ our implementation performs equally well for instances from actual games.
 
 \subsection{Analysis using Random Instance} 
 The performance results reported in this section were obtained by running our
-program on Blueprint with up to 1,024 processors. TODO: Blueprint H/w or
-citation
+program on Blueprint with up to 1,024 processors. This system was composed of
+120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was
+decomissioned in June 2011 and is no longer in operation.
 
 Table~\ref{speedups} shows the performance results for our algorithm on a
 randomly selected problem instance in which the size of the information set was
@@ -681,7 +685,7 @@ expensive.  On the other hand, if the operation can be done in under three
 seconds, ISG can be used as a subroutine in the decision-making process
 (see~\cite{parker05game}). 
 
-\begin{table}
+\begin{table}[ht]
 \centering
 \begin{tabular}{rrr}
 {\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
@@ -706,16 +710,22 @@ the size of the information set in this instance is 4,495,121.}
 \label{speedups}
 \vspace{-0.3in}
 \end{table}
+In order to understand the effect of various parameters such as grain size and load balancing, we first evaluated the scalability of our implementation using a randomly selected problem instance. Next, we show that our implementation performs equally well for instances from actual games.
+\subsection{Analysis using Random Instance}
+The performance results reported in
+this section were obtained by running our program on Blueprint with up to 1024 processors. This system was composed of 120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was decomissioned in June 2011 and is no longer in operation.
+
+Table~\ref{speedups} shows the performance results for our algorithm on a randomly selected problem instance in which
+the size of the information set was about 4.5 million.  This instance is not necessarily representative of all games or
+states of the game, but it was not cherry-picked in any way. The table shows that the problem is indeed highly
+parallizable.  The speedups are nearly linear for up  to 32 processors, and even on 1024 processors, we get a good
+speedup.  In this particular instance, the sequential algorithm takes almost 25 minutes to run.  But when parallelized
+on 1024 processors---perfectly reasonable resource usage on modern hardware---the search takes less than three seconds.
+This is a speedup of 576 times!  It might not be reasonable to use the algorithm at all if it takes 25 or more to run
+for some turns.  But if the cost is only a few seconds, it becomes entirely feasible.
+
 
 \subsubsection{Effect of Load Balancing}
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.9\columnwidth]{plots/3schemes.pdf}
-\vspace{-0.1in}
-\caption{Effect of load-balancing strategy}
-\label{3schemes}
-\vspace{-0.2in}
-\end{figure}
 
 In our next round of experiments, we set out to compare load-balancing
 strategies for the problem.  We used the random, work stealing, and
@@ -729,56 +739,34 @@ other words, perhaps the very nature of the problem means that the load is
 naturally well-balanced and that the load-balancer rarely needs to do a
 significant amount of redistribution.  This is probably also related to the
 fact that we are doing an all-solutions search. 
-
- 
-\subsubsection{Effect of Problem Size}
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
-\begin{minipage}{0.7\linewidth}
-\includegraphics[width=\columnwidth]{plots/3depths.pdf}
-\end{minipage}
-\centering
-\begin{minipage}{0.7\linewidth}
-\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
-\end{minipage}
+\includegraphics[width=0.9\columnwidth]{plots/3schemes.pdf}
 \vspace{-0.1in}
 
 \caption{(Top) Log-log plot of running time for three different problem sizes
 as the number of cores used increases.  (Bottom) Same data with a linear y-axis
 for the running time (to help see the isoefficiency.)}
 
+\caption{Effect of load balancing strategy}
+\label{3schemes}
 \vspace{-0.2in}
-\label{3depths}
 \end{figure}
-
-We next study the variation in the efficiency of the parallelization of the
-algorithm as size of the problem increases.  To test this, we varied the number
-of plies in the test instance from 8 to 12. We used the work stealing
-load-balancing strategy.  
-
-The results are shown in Figure~\ref{3depths}.  In the easiest case (depth 8),
-there is not enough additional parallel work to justify the jump from 256 to
-1,024 processors, and performance actually degrades.  Aside from this anomaly,
-however, we see consistent speedups as we increase the number of processors.
-The plot on the right helps to illustrate the good isoefficiency of the
-problem.  As the size of the problem increases, the amount of parallelizable
-work available also increases, and therefore the steepness of the speed curve
-is higher for larger problem sizes, as the number of processors increases.
  
 \subsubsection{Effect of Grainsize}
 
 \begin{figure*}[!ht]
 \centering
 \subfigure[Depth 8]{
-\includegraphics[width=2.2in]{plots/dep8.pdf}
+\includegraphics[width=2.1in]{plots/dep8.pdf}
 \label{dep8}
 } 
 \subfigure[Depth 10]{
-\includegraphics[width=2.2in]{plots/dep10.pdf}
+\includegraphics[width=2.1in]{plots/dep10.pdf}
 \label{dep10}
 } 
 \subfigure[Depth 12]{
-\includegraphics[width=2.2in]{plots/dep12.pdf}
+\includegraphics[width=2.1in]{plots/dep12.pdf}
 \label{dep12}
 } 
 \vspace{-0.1in}
@@ -812,28 +800,90 @@ of work to be done at the nodes representing the last few levels of the tree.
 This means that the best grainsize is also likely to be fairly predictable,
 which is encouraging.  
 
+\subsubsection{Effect of Problem Size}
+
+
+We next study the variation in the efficiency of the parallelization of the
+algorithm as size of the problem increases.  To test this, we varied the number
+of plies in the test instance from 8 to 12. We used the work stealing
+load-balancing strategy.  
+
+The results are shown in Figure~\ref{3depths}.  In the easiest case (depth 8),
+there is not enough additional parallel work to justify the jump from 256 to
+1,024 processors, and performance actually degrades.  Aside from this anomaly,
+however, we see consistent speedups as we increase the number of processors.
+The plot on the right helps to illustrate the good isoefficiency of the
+problem.  As the size of the problem increases, the amount of parallelizable
+work available also increases, and therefore the steepness of the speed curve
+is higher for larger problem sizes, as the number of processors increases.
 
 \subsection{Real Game Instance}
+%\begin{figure}[ht]
+% \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem4.pdf} %
+%
+%\caption{Kriegspiel position from Virgil-David 1969 with information set size
+%764,209.}
+%
+%\label{prob4} 
+%\vspace{-0.2in}
+%\end{figure}
+%
+%\begin{figure}[ht]
+% \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem5.pdf} %
+%
+%\caption{Kriegspiel position from Game 6 of Kbot-Darkboard at the 2006 Computer
+%Chess championship.  Information set size is 5,099,257.}
+%
+%\label{prob5} 
+%\vspace{-0.2in}
+%\end{figure}
+
 \begin{figure}[ht]
- \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem4.pdf} %
-
-\caption{Kriegspiel position from Virgil-David 1969 with information set size
-764,209.}
-
+ \centering \includegraphics[scale=1]{plots/new.pdf} %
+\caption{Kriegspiel position from 2 games, position 10}
 \label{prob4} 
 \vspace{-0.2in}
 \end{figure}
 
-\begin{figure}[ht]
- \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem5.pdf} %
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+PE/G & 2 & 4 & 6 & 8 \\
+1 & {\bf 177$|$1} & 178$|$0.99 & 1844$|$0.96 & 493$|$0.36 \\
+4 & 71$|$2.48 & 53$|$3.34 & {\bf 48$|$3.63} & 75$|$2.35 \\
+16 & 34$|$5.19 & 19 $|$9.27& {\bf 12$|$13.8} & 16$|$10.7 \\
+64 & 24 $|$7.25 & 7 $|$23.6& {\bf 3.7$|$47.39} & 4.1$|$43.1 \\
+256 & 24 $|$ 7.1& 4.4 $|$40.1 & 1.2 $|$145& {\bf 1.0$|$172} \\
+1024 & 26 $|$6.61 & 3.8 $|$46.5& 0.64 $|$276& {\bf 0.40$|$443}
+\end{tabular}
 
-\caption{Kriegspiel position from Game 6 of Kbot-Darkboard at the 2006 Computer
-Chess championship.  Information set size is 5,099,257.}
+\caption{Running times in seconds and speedups (after $|$), to find full
+information set of size 764,209 at position 10 of Virgil-David 1969. Optimal
+grainsize (G) for each number of cores (PE) is shown in bold.}
 
-\label{prob5} 
 \vspace{-0.2in}
-\end{figure}
+\label{tab:prob4}
+\end{table}
 
+\begin{table}[th]
+\centering
+\begin{tabular}{rrrrr}
+PE/G & 2 & 4 & 6 & 8 \\
+1 & 617$|$1 & {\bf 612$|$1} & 650$|$0.95 & 3312$|$0.19 \\
+4 & 213$|$2.89 & 170$|$3.63 & {\bf 158$|$3.89} & 367$|$1.68 \\
+16 & 83$|$7.41 & 49$|$12.4 & {\bf 40$|$15.1} & 64$|$9.57 \\
+64 & 54$|$11.3 & 19$|$32.3 & {\bf 11$|$52.9} & 14.9$|$41.4 \\
+256 & 54$|$11.3 & 9.8$|$62.9 & 3.5$|$172 & {\bf 3.5$|$174} \\
+1024 & 58$|$10.6 & 5.5$|$111 & 1.3$|$464 & {\bf 1.2$|$536} \\
+\end{tabular}
+
+\caption{Running times, in seconds and speedups (after $|$), to find full
+information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006.
+Optimal grainsize for each number of cores is shown in bold.}
+
+\vspace{-0.2in}
+\label{tab:prob5}
+\end{table}
 
 We also evaluated our information set generation routine on 40 positions from
 actual kriespiel games, including human vs. human and computer vs. computer
@@ -863,46 +913,6 @@ increases, the work can be efficiently broken up into smaller pieces and doled
 out to all the cores.  With more pieces of work, it becomes easier to balance
 the load.
 
-\begin{table}[tphb]
-\centering
-\begin{tabular}{rrrrr}
-PE/G & 2 & 4 & 6 & 8 \\
-1 & {\bf 177$|$1} & 178$|$0.99 & 1844$|$0.96 & 493$|$0.36 \\
-4 & 71$|$2.48 & 53$|$3.34 & {\bf 48$|$3.63} & 75$|$2.35 \\
-16 & 34$|$5.19 & 19 $|$9.27& {\bf 12$|$13.8} & 16$|$10.7 \\
-64 & 24 $|$7.25 & 7 $|$23.6& {\bf 3.7$|$47.39} & 4.1$|$43.1 \\
-256 & 24 $|$ 7.1& 4.4 $|$40.1 & 1.2 $|$145& {\bf 1.0$|$172} \\
-1024 & 26 $|$6.61 & 3.8 $|$46.5& 0.64 $|$276& {\bf 0.40$|$443}
-\end{tabular}
-
-\caption{Running times in seconds and speedups (after $|$), to find full
-information set of size 764,209 at position 10 of Virgil-David 1969. Optimal
-grainsize (G) for each number of cores (PE) is shown in bold.}
-
-\vspace{-0.2in}
-\label{tab:prob4}
-\end{table}
-
-\begin{table}[tphb]
-\centering
-\begin{tabular}{rrrrr}
-PE/G & 2 & 4 & 6 & 8 \\
-1 & 617$|$1 & {\bf 612$|$1} & 650$|$0.95 & 3312$|$0.19 \\
-4 & 213$|$2.89 & 170$|$3.63 & {\bf 158$|$3.89} & 367$|$1.68 \\
-16 & 83$|$7.41 & 49$|$12.4 & {\bf 40$|$15.1} & 64$|$9.57 \\
-64 & 54$|$11.3 & 19$|$32.3 & {\bf 11$|$52.9} & 14.9$|$41.4 \\
-256 & 54$|$11.3 & 9.8$|$62.9 & 3.5$|$172 & {\bf 3.5$|$174} \\
-1024 & 58$|$10.6 & 5.5$|$111 & 1.3$|$464 & {\bf 1.2$|$536} \\
-\end{tabular}
-
-\caption{Running times, in seconds and speedups (after $|$), to find full
-information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006.
-Optimal grainsize for each number of cores is shown in bold.}
-
-\vspace{-0.2in}
-\label{tab:prob5}
-\end{table}
-
 Note that both problems scale well even up to 1,024 processors.  We achieve a
 speedup of $443$ in the game between humans and up to $536$ in the game between
 computers.  Figures~\ref{prob4} and~\ref{prob5} show the plots of the running
@@ -918,6 +928,20 @@ cores~\cite{felten88highly}.  This limited scalability is due to speculative
 loss.  Parts of the game tree that are searched during the parallel execution
 would have been pruned had the algorithm run sequentially.  This is a
 fundamental limitation in alpha-beta search. 
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrc}
+{\bf Authors} & {\bf Game} & {\bf Year} & {\bf Best Speedup (cores)} \\
+Ferguson \& Korf & Othello & 1988 & 12(32) \\
+Felton \& Otto & Chess & 1988 & 100(256) \\
+Richards \etal & Kriegspiel & 2012 & 178(256) \\
+Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
+\end{tabular}
+\caption{Best Speedups reported for game tree applications.}
+\vspace{-0.2in}
+\label{bestspeedups}
+\end{table}
 
 For partially observable games, information set generation represents a
 different variety of tree search that does not suffer from speculative loss.
@@ -940,21 +964,8 @@ two additional levels of parallelism on top of the information set generation
 problem, it is likely that the problem of playing partially observable
 games could scale efficiently to millions of processors or more.
 
-\begin{table}[tphb]
-\centering
-\begin{tabular}{lrrc}
-{\bf Authors} & {\bf Game} & {\bf Year} & {\bf Best Speedup (cores)} \\
-Ferguson \& Korf & Othello & 1988 & 12(32) \\
-Felton \& Otto & Chess & 1988 & 100(256) \\
-Richards \etal & Kriegspiel & 2012 & 178(256) \\
-Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
-\end{tabular}
-\caption{Best Speedups reported for game tree applications.}
-\vspace{-0.2in}
-\label{bestspeedups}
-\end{table}
-
-\Section{Related Work}
+\section{Related Work}
+\label{Related}
 An overview of the theory of imperfect information games and other basic topics
 in game theory can be found in~\cite{kuhn03lectures} and~\cite{kuhn97classics}.
 A technical explanation of the concept of information sets can be found
@@ -975,18 +986,18 @@ Scrabble~\cite{sheppard02world}.
 In this work, we have argued for an ISG approach to Kriegspiel, but other
 authors have approached the problem differently.  Parker \etal, consider the
 problem of sampling from belief states in a variety of large game trees,
-including Kriegspiel~\cite{parker05game}.  They show that some performance
-gains can be achieved by only approximate sampling from the belief state.
-Instead of generating the full information set, or even sampling from it, they
-sample from possible positions for the current state (i.e., sampling from the
-belief state) by matching only the most recent observations.  The motivation
-for this approach seems to be that it would not be feasible to sample from the
-full information set, because of the computational expense involved. Our
-experiments bear this out-- it can indeed be expensive to produce the full
-information set.  For the experiments shown in Table~\ref{speedups}, generating
-the full information set took over 25 minutes on a single processor.  However,
-by utilizing the {\sc Charm++/ParSSSE} search engine on a parallel machine (1,024
-processors), we were able to generate the full set in just 2.9 seconds.    
+including Kriegspiel~\cite{parker05game}.  They show that some performance gains
+can be achieved by only approximate sampling from the belief state.  Instead of
+generating the full information set, or even sampling from it, they sample from
+possible positions for the current state (i.e., sampling from the belief state)
+by matching only the most recent observations.  The motivation for this approach
+seems to be that it would not be feasible to sample from the full information
+set, because of the computational expense involved. Our experiments bear this
+out-- it can indeed be expensive to produce the full information set.  For the
+experiments shown in Table~\ref{speedups}, generating the full information set
+took over 25 minutes on a single processor.  However, by utilizing the {\sc
+Charm++/ParSSSE} search engine on a parallel machine (1,024 processors), we were
+able to generate the full set in just 2.9 seconds.    
 
 %Li gives an overview of Kriegspiel and discusses strategy from the perspective of human players~\cite{li94chess}.  He
 %walks through the analysis of several actual games between two human players and discusses the inferences that each
@@ -1077,7 +1088,7 @@ computational expense of a theorem prover or SAT solver.
 %only at the squares along its rank, file, diagonals, and knight-edges for threats.  There are also some memory
 %allocation issues that could be improved. 
 
-\Section{Conclusion and Future Work}
+\section{Conclusion and Future Work}
 We have shown that information set generation for Kriegspiel can be efficiently
 parallelized.  The opportunities for parallelism increase as the problem size
 increases.  Our algorithm has performed well on problems with information sets
@@ -1545,7 +1556,7 @@ ordering heuristics.
 %%\label{verboseoutput}
 %%\end{figure}
 
-\bibliographystyle{latex8}
+\bibliographystyle{IEEEtran}
 \bibliography{paper}
 
 \end{document}
