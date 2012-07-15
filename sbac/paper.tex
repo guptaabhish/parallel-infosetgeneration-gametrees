@@ -13,6 +13,8 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{listings}
 \usepackage{amsmath,amsfonts,latexsym,graphicx}
+\usepackage[tableposition=top,font=bf]{caption}
+
 \lstset{language=C,numbers=left,basicstyle=\footnotesize,numberstyle=\footnotesize}
 \usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,fit,shapes.geometric}
 \usepgflibrary{shapes.geometric}
@@ -696,6 +698,10 @@ seconds, ISG can be used as a subroutine in the decision-making process
 (see~\cite{parker05game}). 
 
 \begin{table}[ht]
+
+\caption{Speedups for a randomly selected problem instance on 1--1,024
+processors.  The input observations were from the 10th ply of the game tree and
+the size of the information set in this instance is 4,495,121.}
 \centering
 \begin{tabular}{rrr}
 {\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
@@ -712,9 +718,6 @@ seconds, ISG can be used as a subroutine in the decision-making process
 1024	&	2.64	&	576\\
 \end{tabular}
 
-\caption{Speedups for a randomly selected problem instance on 1--1,024
-processors.  The input observations were from the 10th ply of the game tree and
-the size of the information set in this instance is 4,495,121.}
 
 \label{speedups}
 \end{table}
@@ -847,6 +850,11 @@ is higher for larger problem sizes, as the number of processors increases.
 \end{figure}
 
 \begin{table}[ht]
+\caption{Running times in seconds and speedups (after $|$), to find full
+information set of size 764,209 at position 10 of Virgil-David 1969. Optimal
+grainsize (G) for each number of cores (PE) is shown in bold.}
+
+
 \centering
 \begin{tabular}{rrrrr}
 PE/G & 2 & 4 & 6 & 8 \\
@@ -858,14 +866,14 @@ PE/G & 2 & 4 & 6 & 8 \\
 1024 & 26 $|$6.61 & 3.8 $|$46.5& 0.64 $|$276& {\bf 0.40$|$443}
 \end{tabular}
 
-\caption{Running times in seconds and speedups (after $|$), to find full
-information set of size 764,209 at position 10 of Virgil-David 1969. Optimal
-grainsize (G) for each number of cores (PE) is shown in bold.}
-
 \label{tab:prob4}
 \end{table}
 
 \begin{table}[th]
+
+\caption{Running times, in seconds and speedups (after $|$), to find full
+information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006.
+Optimal grainsize for each number of cores is shown in bold.}
 \centering
 \begin{tabular}{rrrrr}
 PE/G & 2 & 4 & 6 & 8 \\
@@ -877,9 +885,6 @@ PE/G & 2 & 4 & 6 & 8 \\
 1024 & 58$|$10.6 & 5.5$|$111 & 1.3$|$464 & {\bf 1.2$|$536} \\
 \end{tabular}
 
-\caption{Running times, in seconds and speedups (after $|$), to find full
-information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006.
-Optimal grainsize for each number of cores is shown in bold.}
 \label{tab:prob5}
 \end{table}
 
@@ -928,6 +933,7 @@ would have been pruned had the algorithm run sequentially.  This is a
 fundamental limitation in alpha-beta search. 
 
 \begin{table}[ht]
+\caption{Best Speedups reported for game tree applications.}
 \centering
 \begin{tabular}{lrrc}
 {\bf Authors} & {\bf Game} & {\bf Year} & {\bf Best Speedup (cores)} \\
@@ -936,7 +942,6 @@ Felton \& Otto & Chess & 1988 & 100(256) \\
 Richards \etal & Kriegspiel & 2012 & 178(256) \\
 Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
 \end{tabular}
-\caption{Best Speedups reported for game tree applications.}
 \label{bestspeedups}
 \end{table}
 
