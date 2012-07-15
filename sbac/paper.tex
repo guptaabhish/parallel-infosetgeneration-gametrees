@@ -266,7 +266,6 @@ ultimately allowed by the referee would also be a legal move in chess.
 \caption{White's view}
 \label{fig:figure2}
 \end{minipage}
-\vspace{-0.2in}
 \end{figure}
 
 
@@ -383,10 +382,8 @@ Black's observations up to that point.
 %1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:f3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
 %1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
 \end{mytinylisting}
-\vspace{-0.2in}
 \caption{Abbreviated output from example game.  Three of 25 sequences that are consistent with Black's observations after five moves by each player.  The 25 sequences (or the states that result from them) compose Black's information set at that point in the game. From this, Black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
 \label{abbrevoutput}
-\vspace{-0.3in}
 \end{figure}
 
 %\begin{table}
@@ -714,14 +711,12 @@ seconds, ISG can be used as a subroutine in the decision-making process
 512	&	4.59	&	331\\
 1024	&	2.64	&	576\\
 \end{tabular}
-\vspace{-0.1in}
 
 \caption{Speedups for a randomly selected problem instance on 1--1,024
 processors.  The input observations were from the 10th ply of the game tree and
 the size of the information set in this instance is 4,495,121.}
 
 \label{speedups}
-\vspace{-0.3in}
 \end{table}
 
 
@@ -743,11 +738,9 @@ fact that we are doing an all-solutions search.
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.9\columnwidth]{plots/3schemes.pdf}
-\vspace{-0.1in}
 
 \caption{Effect of load balancing strategy}
 \label{3schemes}
-\vspace{-0.2in}
 \end{figure}
  
 \subsubsection{Effect of Grainsize}
@@ -766,11 +759,9 @@ fact that we are doing an all-solutions search.
 \includegraphics[width=2.1in]{plots/dep12.pdf}
 \label{dep12}
 } 
-\vspace{-0.1in}
 \caption{Grainsize Control for different problem sizes}
 %\vspace{-0.1in}
 \label{fig:dep}
-\vspace{-0.1in}
 \end{figure*}
 %
 \begin{figure}[ht]
@@ -782,10 +773,8 @@ fact that we are doing an all-solutions search.
 \begin{minipage}{0.7\linewidth}
 \includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
 \end{minipage}
-\vspace{-0.1in}
 \caption{(Top) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
 (Bottom) Same data with a linear y-axis for the running time, to help see the isoefficiency.}
-\vspace{-0.2in}
 \label{3depths}
 \end{figure}
 
@@ -855,7 +844,6 @@ is higher for larger problem sizes, as the number of processors increases.
  \centering \includegraphics[scale=1]{plots/new.pdf} %
 \caption{Kriegspiel position from 2 games, position 10}
 \label{prob4} 
-\vspace{-0.2in}
 \end{figure}
 
 \begin{table}[ht]
@@ -874,7 +862,6 @@ PE/G & 2 & 4 & 6 & 8 \\
 information set of size 764,209 at position 10 of Virgil-David 1969. Optimal
 grainsize (G) for each number of cores (PE) is shown in bold.}
 
-\vspace{-0.2in}
 \label{tab:prob4}
 \end{table}
 
@@ -893,8 +880,6 @@ PE/G & 2 & 4 & 6 & 8 \\
 \caption{Running times, in seconds and speedups (after $|$), to find full
 information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006.
 Optimal grainsize for each number of cores is shown in bold.}
-
-\vspace{-0.2in}
 \label{tab:prob5}
 \end{table}
 
@@ -952,7 +937,6 @@ Richards \etal & Kriegspiel & 2012 & 178(256) \\
 Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
 \end{tabular}
 \caption{Best Speedups reported for game tree applications.}
-\vspace{-0.2in}
 \label{bestspeedups}
 \end{table}
 
