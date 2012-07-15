@@ -104,7 +104,7 @@ Information Set Generation is the identification of the set of paths in an
 imperfect information game tree that are consistent with a player's
 observations.  The ability to reason about the possible game history is
 critical to the performance of game-playing agents.  ISG represent a class of
-combinatorial search problems which is computationaly intensive but difficult
+combinatorial search problems which is computationally intensive but difficult
 to efficiently parallelize.
 
 In this paper, we address the parallelization of information set generation in
@@ -283,7 +283,7 @@ declared illegal are shown in a list following the `:'.
 
 Figure~\ref{fig:figure1} shows the true state of the game after nine moves by
 each player.  Figure~\ref{fig:figure2} shows White's perspective of the game at
-that poin. At move 9, Black attempts to block a
+that coin. At move 9, Black attempts to block a
 potential threat along the diagonal by moving a pawn to g6, then attempts to
 escape or capture a threat at f7.  When both of these attempts fail, Black can
 infer that his king is being threatened by a protected bishop or queen at f7.
@@ -530,7 +530,7 @@ tests, then a solution has been found and is added to the information set (line 
 %  checkForCheck(possState, whiteMove, levels[depth], nMoves); // prunes if not equal
 %  assert (nMoves < NMOVES); // 
 %
-%  if (whitePerspective == whiteMove) { // move from perspective plyaer 
+%  if (whitePerspective == whiteMove) { // move from perspective player 
 %    SetMove& failures = failedMoves[depth];
 %    for (SetMove::const_iterator itr = failures.begin(); itr != failures.end(); ++itr) {
 %      uint16_t move = *itr ;
@@ -679,7 +679,7 @@ our implementation performs equally well for instances from actual games.
 The performance results reported in this section were obtained by running our
 program on Blueprint with up to 1,024 processors. This system was composed of
 120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was
-decomissioned in June 2011 and is no longer in operation.
+decommissioned in June 2011 and is no longer in operation.
 
 Table~\ref{speedups} shows the performance results for our algorithm on a
 randomly selected problem instance in which the size of the information set was
@@ -889,7 +889,7 @@ PE/G & 2 & 4 & 6 & 8 \\
 \end{table}
 
 We also evaluated our information set generation routine on 40 positions from
-actual Kriespiel games, including human vs. human and computer vs. computer
+actual Kriegspiel games, including human vs. human and computer vs. computer
 instances.  Many of these were trivial to solve in a few seconds or less on a
 desktop computer.  For these experiments, we used the Ranger supercomputer
 at TACC~\cite{ranger}. Ranger has 16-way SMP nodes containing AMD Opteron
