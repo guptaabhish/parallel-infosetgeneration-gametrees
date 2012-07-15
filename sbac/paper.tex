@@ -73,10 +73,11 @@
 \title{Parallel Information Set Generation for Kriegspiel 
        }
 
-\author{Mark Richards, Abhishek Gupta, Osman Sarood and Laxmikant V. Kale\\
-Department of Computer Science\\ 
-University of Illinois\\ 
-Urbana, IL\\ {mdrichar, gupta59, sarood1, kale}@illinois.edu\\
+\author{
+\IEEEauthorblockN{Mark Richards, Abhishek Gupta, Osman Sarood and Laxmikant V. Kal\'e\\}
+\IEEEauthorblockA{University of Illinois at Urbana-Champaign\\
+Urbana, IL 61801, USA\\
+(mdrichar, gupta59, sarood1, kale)@illinois.edu\\}
 % For a paper whose authors are all at the same institution, 
 % omit the following lines up until the closing ``}''.
 % Additional authors and addresses can be added with ``\and'', 
@@ -100,18 +101,17 @@ Urbana, IL\\ {mdrichar, gupta59, sarood1, kale}@illinois.edu\\
 %Parallel Combinatorial Search} \maketitle
 
 \begin{abstract}
-Information Set Generation is the identification of the set of paths in an
+Information Set Generation (ISG) is the identification of the set of paths in an
 imperfect information game tree that are consistent with a player's
 observations.  The ability to reason about the possible game history is
-critical to the performance of game-playing agents.  ISG represent a class of
+critical to the performance of game-playing agents.  ISG represents a class of
 combinatorial search problems which is computationally intensive but difficult
 to efficiently parallelize.
 
 In this paper, we address the parallelization of information set generation in
 the context of Kriegspiel (partially observable chess).  We implement the
 algorithm on top of a general purpose combinatorial search engine and discuss
-its performance under different load balancing strategies and with different
-grainsize parameters.  We achieve speedups of over 500 on 1,024 processors, far
+its performance using datasets from real game instances in addition to benchmarks. Further, we demonstrate the effect of load balancing strategies, problem sizes and computational granularity (grainsize parameters) on performance.  We achieve speedups of over 500 on 1,024 processors, far
 exceeding previous scalability results for game tree search applications.
 \end{abstract}
 
