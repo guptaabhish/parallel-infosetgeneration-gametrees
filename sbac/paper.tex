@@ -46,8 +46,9 @@
 {\end{list}}
 
 \newenvironment{mytinylisting}
-{\begin{list}{}{\setlength{\leftmargin}{1em}}\item\scriptsize\texttt}
+{\begin{list}{}{\setlength{\leftmargin}{1em}}\item\small\texttt}
 {\end{list}}
+
 \newenvironment{proof}{\vspace{-0.15in}\noindent{\bf Proof:}}%
         {\hspace*{\fill}$\Box$\par}
 \newenvironment{proofsketch}{\noindent{\bf Proof Sketch.}}%
@@ -220,6 +221,34 @@ In general, any move that is legal in a regular chess match may be at least
 attempted by a player in Kriegspiel.  And any Kriegspiel move that is
 ultimately allowed by the referee would also be a legal move in chess.    
 
+\begin{figure}
+\begin{center}
+\begin{verbatim}
+1. d4 {(:)}
+   a5 {(:)}
+2. Bg5 {(:)}
+   b6 {(:)}
+3. Nc3 {(:Bd8)}
+   c5 {(:)}
+4. d5 {(:Bd8;Tc5)}
+   Na6 {(:)}
+5. d6 {(:)}
+   f6 {(:Td6)}
+6. e4 {(:)}
+   fxg5 {(Xg5:Td6;Tg5)}
+7. Bc4 {(:)}
+   exd6 {(Xd6:Td6)}
+8. Qd5 {(:)}
+   Qc7 {(:)}
+9. Qf7+ {(:)} 
+   Kd8 {:g6,Kxf7,Ke7}
+10. Qxf8++ {(1-0:)}
+\end{verbatim}
+\end{center}
+\caption{Listing of a Kriegspiel game resulting in checkmate by white after 10 moves. The final, legal move for each player is shown followed by the list of moderator declarations and all moves that were attempted but disallowed before the legal move was accepted.}
+\label{listing}
+\end{figure}
+
 %\SubSection{Example}
 \begin{figure}[ht]
 \centering
@@ -241,57 +270,37 @@ ultimately allowed by the referee would also be a legal move in chess.
 \end{figure}
 
 
-%\begin{figure}
-%\begin{verbatim}
-%1. d4 {(:)}
-%   a5 {(:)}
-%2. Bg5 {(:)}
-%   b6 {(:)}
-%3. Nc3 {(:Bd8)}
-%   c5 {(:)}
-%4. d5 {(:Bd8;Tc5)}
-%   Na6 {(:)}
-%5. d6 {(:)}
-%   f6 {(:Td6)}
-%6. e4 {(:)}
-%   fxg5 {(Xg5:Td6;Tg5)}
-%7. Bc4 {(:)}
-%   exd6 {(Xd6:Td6)}
-%8. Qd5 {(:)}
-%   Qc7 {(:)}
-%9. Qf7+ {(:)} 
-%   d8 {:g6,f7,e7}
-%10. Qxf8++ {(1-0:)}
-%\end{verbatim}
-%\label{listing}
-%\caption{Listing of a Kriegspiel game resulting in checkmate by white after 10 moves.}
-%\end{figure}
-
 \section{Information Set Generation}
 \label{info}
 %\subsection{Information Set Generation}
 The concept of information sets is perhaps best explained through an example. 
-Figure~\ref{filteredlisting},~\ref{fig:figure1} and \ref{fig:figure2} show a full listing and the associated pictorial progression of an actual
-kriegspiel game~\cite{li94chess}.  We have adopted the notation used by Wolfe for Berkeley Kriegspiel.  Odd (resp. even) moves are for white (resp. black).  The actual move is shown
+Figures ~\ref{listing} show a full game listing and the associated pictorial progression of an actual
+Kriegspiel game~\cite{li94chess}.  We have adopted the notation used by Wolfe for Berkeley Kriegspiel~\cite{wolfe07exploiting}.  Each numbered entry shows one complete turn for both White and Black.  The actual move is shown
 first followed by a list of referee announcements.  Captures announcements are prefixed with an X and give the location
-of the captured piece.  Similarly, pawn tries announcements are prefixed with T.  Attempted moves that were ultimately
-declared illegal are shown in a list following the `:'.  For example at move 9, (Figure~\ref{filteredlisting}),
-black attempts to block a potential threat along the diagonal by moving a pawn to f6, then attempts to escape or capture
-a threat at f7.  When both of these attempts fail, black can infer that his king is being threatened by a protected
-bishop or queen at f7.  The attempt to move to e7 is black's way of finding out whether the threatening piece is a queen
-or bishop.  When this move fails, black knows it is white's queen and ultimately retreats to d8.  Note that the failed
-moves by white on turns 3 and 4 are a result of being blocked by the pawn at e2.
+of the captured piece.  Similarly, pawn try announcements are prefixed with T.  Attempted moves that were ultimately
+declared illegal are shown in a list following the `:'.  
+
+Figure~\ref{fig:figure1} shows the true state of the game after nine moves by
+each player.  Figure~\ref{fig:figure2} shows White's perspective of the game at
+that poin. At move 9, (Figure~\ref{filteredlisting}), Black attempts to block a
+potential threat along the diagonal by moving a pawn to g6, then attempts to
+escape or capture a threat at f7.  When both of these attempts fail, Black can
+infer that his king is being threatened by a protected bishop or queen at f7.
+The attempt to move to e7 is Black's way of finding out whether the threatening
+piece is a queen or bishop.  When this move fails, black knows it is White's
+queen and ultimately retreats to d8.  Note that the failed moves by White on
+turns 3 and 4 are a result of being blocked by the pawn at e2.
 
 
 The listing in Figure~\ref{listing} corresponds to the referee's view of the game and would be useful for
 post-game analysis or commentary.  During the game, players would not have access to the full information.  The
-transcript from white's perspective is shown in Figure~\ref{filteredlisting}.  Note that black's actual moves have been
-replaced with ``??'' and lists of black's illegal moves have been replaced with the {\em number} of illegal attempted
-moves.  For example, on move 9, black attempted three illegal moves.
+transcript from White's perspective is shown in Figure~\ref{filteredlisting}.  Note that Black's actual moves have been
+replaced with ``??'' and lists of Black's illegal moves have been replaced with the {\em number} of illegal attempted
+moves.  For example, on move 9, Black attempted three illegal moves.
 \begin{figure}
-\begin{minipage}[b]{0.35\linewidth}
-\centering
-\small
+%\begin{minipage}[b]{0.35\linewidth}
+%\centering
+%\small
 \begin{verbatim}
 1. d4 {(:)}
    ?? {(:0)}
@@ -303,12 +312,6 @@ moves.  For example, on move 9, black attempted three illegal moves.
    ??  {(:0)}
 5. d6 {(:)}
    ?? {(:0,Td6)}
-\end{verbatim}
-\end{minipage}
-\begin{minipage}[b]{0.25\linewidth}
-\small
-\centering
-\begin{verbatim}
 6. e4 {(:)}
    fxg5 {(Xg5:Td6;Tg5)}
 7. Bc4 {(:)}
@@ -319,21 +322,27 @@ moves.  For example, on move 9, black attempted three illegal moves.
    ?? {:0}
 10. Qxf8++ {(1-0:)}
 \end{verbatim}
-\end{minipage}
-\vspace{-0.1in}
-\caption{Listing of a Kriegspiel game resulting in checkmate by white after 10 moves.}
+%\end{verbatim}
+%\end{minipage}
+%\begin{minipage}[b]{0.25\linewidth}
+%\small
+%\centering
+%\begin{verbatim}
+%\end{minipage}
+%\vspace{-0.1in}
+\caption{Observations received by White over the course of the game.  White does not know Black's actual moves but hears moderator announcements related to captures, pawn tries, and the number of attempted moves by Black that fail.}
 \label{filteredlisting}
-\vspace{-0.2in}
+%\vspace{-0.2in}
 \end{figure}
 
 The listing of a sequence of moves from the perspective of one player lists all of that player's moves exactly and
 includes the declarations from the referee.  We refer to such a list as a player's observations.  Given a list of
 observations for a sequence of moves, an information set is the set of all possible {\em sequences of moves for both
 players}, that are consistent with those observations.  In other words, any sequence of moves that would have generated
-the same sequence of observations for black is in black's information set.  Figure~\ref{abbrevoutput} shows the
-information set for black after both player's have made five moves.  From this list of possibilities, black can infer
-that white must have a bishop at g5 and a pawn at d6.  There are 25 possible sequences of moves that are consistent with
-black's observations up to that point. 
+the same sequence of observations for Black is in Black's information set.  Figure~\ref{abbrevoutput} shows a portion of the
+information set for Black after both player's have made five moves.  From this list of possibilities, Black can infer
+that White must have a bishop at g5 and a pawn at d6.  There are 25 possible sequences of moves that are consistent with
+Black's observations up to that point. 
 
 %Table~\ref{bothtimes} shows the size of the information sets for each player for
 %each move in the game and the amount of time to find the full set on a single processor.  Appendix B shows the full
@@ -375,8 +384,7 @@ black's observations up to that point.
 %1. Pd2:d4 Pa7:a5 2. Bc1:g5 Pb7:b6 3. Ng1:h3 Pc7:c5 4. Pd4:d5 Nb8:a6 5. Pd5:d6 Pf7:f6 \\
 \end{mytinylisting}
 \vspace{-0.2in}
-\caption{Abbreviated output from example game.  Generating information sets for black after five turns by each player.
-From this, black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
+\caption{Abbreviated output from example game.  Three of 25 sequences that are consistent with Black's observations after five moves by each player.  The 25 sequences (or the states that result from them) compose Black's information set at that point in the game. From this, Black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
 \label{abbrevoutput}
 \vspace{-0.3in}
 \end{figure}
@@ -438,17 +446,22 @@ From this, black can infer that there is definitely a white bishop at g5 and a w
 %\end{table}
 
    
-\textbf{The Information Set Generation Algorithm}
-(ISG) can be formulated as a combinatorial search problem.  The input to the algorithm is a list
-of observations for one player in a Kriegspiel game.    
+\textbf{The Information Set Generation}
+(ISG) operation can be formulated as a combinatorial search problem.  The input to the algorithm is a list
+of $t$ observations for one player $k$ (denoted $o_{1:t}^{(k)}$ in a Kriegspiel game.    
 
-The nodes in the search tree at depth $n$ correspond possible to possible sequences of $n$ plies from the start state.
-There is a search space variable for each ply in the game, and the values that a variable can take on are all possible
-legal moves.  Information set generation, then, is an all-solutions search through the space.  Whenever a node in the search tree is
-found to be inconsistent with the actual observation given in the input, the
-subtree rooted at that node is pruned (i.e., search is discontinued along that
-path).  There are types of observations that must match in order for the state
-to be found: check status, pawn tries, and illegal moves available/attempted.
+The nodes in the search tree at depth $n$ correspond possible to possible move 
+sequences of $n$ plies from the start state.  (A sequence of $t$ actions from
+the start state is denoted $a_{1:t}$.) There is a search space variable for
+each ply in the game, and the values that a variable can take on are all
+possible legal moves.  Information set generation, then, is an all-solutions
+search through the space.  Whenever a node in the search tree is found to be
+inconsistent with the actual observation given in the input, the subtree rooted
+at that node is pruned (i.e., search is discontinued along that path).  There
+are three types of observations that must match in order for a state $s$ to be
+included in the information set $I$ at depth $t$: check status, pawn tries, and
+illegal moves available/attempted.
+
 \begin{figure}[htpb]
 \small
 %\begin{algorithm}
@@ -467,10 +480,10 @@ to be found: check status, pawn tries, and illegal moves available/attempted.
     \EndFor
   }\EndIf
 \EndFunction
-\label{codelisting1}
 \end{algorithmic}
 \end{boxedminipage}
 \caption{Algorithm}
+\label{codelisting1}
 \end{figure}
 
 
@@ -732,10 +745,6 @@ fact that we are doing an all-solutions search.
 \includegraphics[width=0.9\columnwidth]{plots/3schemes.pdf}
 \vspace{-0.1in}
 
-\caption{(Top) Log-log plot of running time for three different problem sizes
-as the number of cores used increases.  (Bottom) Same data with a linear y-axis
-for the running time (to help see the isoefficiency.)}
-
 \caption{Effect of load balancing strategy}
 \label{3schemes}
 \vspace{-0.2in}
@@ -763,6 +772,22 @@ for the running time (to help see the isoefficiency.)}
 \label{fig:dep}
 \vspace{-0.1in}
 \end{figure*}
+%
+\begin{figure}[ht]
+\centering
+\begin{minipage}{0.7\linewidth}
+\includegraphics[width=\columnwidth]{plots/3depths.pdf}
+\end{minipage}
+\centering
+\begin{minipage}{0.7\linewidth}
+\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
+\end{minipage}
+\vspace{-0.1in}
+\caption{(Top) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
+(Bottom) Same data with a linear y-axis for the running time, to help see the isoefficiency.}
+\vspace{-0.2in}
+\label{3depths}
+\end{figure}
 
 Next, we evaluate the effect of grainsize on execution time.  The results are
 shown in Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet
@@ -874,7 +899,7 @@ Optimal grainsize for each number of cores is shown in bold.}
 \end{table}
 
 We also evaluated our information set generation routine on 40 positions from
-actual kriespiel games, including human vs. human and computer vs. computer
+actual Kriespiel games, including human vs. human and computer vs. computer
 instances.  Many of these were trivial to solve in a few seconds or less on a
 desktop computer.  For these experiments, we used the Ranger supercomputer
 at TACC~\cite{ranger}. Ranger has 16-way SMP nodes containing AMD Opteron
@@ -882,7 +907,7 @@ processors. The nodes are interconnected using Infiniband technology in a
 fully-CLOS topology providing a 1GBps point-to-point bandwidth. 
 
 The running times and speedups for two of the more challenging instances on
-Ranger are shown in Tables~\ref{prob4}--\ref{tab:prob5speedups}.   These tables
+Ranger are shown in Tables~\ref{tab:prob4}--\ref{tab:prob5}.   These tables
 show the results for runs on one to $1,024$ cores.  Each column corresponds to
 a different grainsize parameter.  In this case, the grainsize is the number of
 levels of the search tree that are searched in parallel.  Up to that threshold,
@@ -903,8 +928,8 @@ the load.
 
 Note that both problems scale well even up to 1,024 processors.  We achieve a
 speedup of $443$ in the game between humans and up to $536$ in the game between
-computers.  Figures~\ref{prob4} and~\ref{prob5} show the plots of the running
-times for the best grainsize for each core setting.  These plots show that the
+computers.  Figure~\ref{prob4} shows the plots of the running
+times on these two problems with the best grainsize for each core setting.  These plots show that the
 running time continues to decrease as the number of cores increases.
 
 Our results compare favorably to previous work in parallel game tree search,
@@ -957,7 +982,7 @@ games could scale efficiently to millions of processors or more.
 An overview of the theory of imperfect information games and other basic topics
 in game theory can be found in~\cite{kuhn03lectures} and~\cite{kuhn97classics}.
 A technical explanation of the concept of information sets can be found
-in~\cite{gilpin07algorithms}.  Koller \etal, showed that a Nash equilibrium can
+in~\cite{gilpin09algorithms}.  Koller \etal, showed that a Nash equilibrium can
 be found in time that is polynomial in the number of nodes in the game
 tree~\cite{koller94fast}.  In fact, they found that it took about as much time
 to generate the full game tree as it did to actually solve it.  Unfortunately,
