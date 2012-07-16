@@ -345,7 +345,7 @@ moves.  For example, on move 9, Black attempted three illegal moves.
 %\vspace{-0.1in}
 \caption{Observations received by White over the course of the game.  White does not know Black's actual moves but hears moderator announcements related to captures, pawn tries, and the number of attempted moves by Black that fail.}
 \label{filteredlisting}
-%\vspace{-0.2in}
+\vspace{-0.2in}
 \end{figure}
 
 The listing of a sequence of moves from the perspective of one player lists all of that player's moves exactly and
@@ -398,6 +398,7 @@ Black's observations up to that point.
 \end{mytinylisting}
 \caption{Abbreviated output from example game.  Three of 25 sequences that are consistent with Black's observations after five moves by each player.  The 25 sequences (or the states that result from them) compose Black's information set at that point in the game. From this, Black can infer that there is definitely a white bishop at g5 and a white pawn at d6.}
 \label{abbrevoutput}
+\vspace{-0.1in}
 \end{figure}
 
 %\begin{table}
@@ -482,6 +483,7 @@ of $t$ observations for one player $k$ (denoted $o_{1:t}^{(k)}$ in a Kriegspiel 
 \end{boxedminipage}
 \caption{Core of Information Set Generation Algorithm}
 \label{codelisting1}
+\vspace{-0.2in}
 \end{figure}
 
 
@@ -593,7 +595,7 @@ system for parallel processing~\cite{kale93charm,kale09charm}.  {\sc Charm++}
 is an extension to the C++ programming language that provides
 machine-independent infrastructure for parallel computation.  The language and
 its accompanying runtime system have been ported to many shared-memory and
-distributed-memory platforms.
+distributed-memory platforms. {\sc Charm++} is used by many highly scalable scientific applications such as NAMD~\cite{NAMDIPDPS08} and ChaNGa~\cite{2007_ChaNGaScaling}
 
 In contrast to other popular parallel programming frameworks such as {\sc MPI}~\cite{MPI}
 and {\sc OpenMP}~\cite{OpenMP}, {\sc Charm++} is based on object-oriented
@@ -650,7 +652,7 @@ management, so that the threshold for sequential processing can be changed
 during the execution of the program, depending on the properties of the problem
 and/or the realtime performance analysis by the runtime system.
 
-Charm++ (and hence {\sc ParSSSE}) provides multiple load balancing strategies and we used three of them in our application. We describe these strategies next. The
+{\sc Charm++} (and hence {\sc ParSSSE}) provides multiple load balancing strategies and we used three of them in our application~\cite{GengbinThesis}. We describe these strategies next. The
 first is the randomized strategy.  In this approach, each newly created object
 is assigned to a random processor.  Generally, if a large enough number of 
 chares is created, the system will achieve an approximately uniform
@@ -911,7 +913,7 @@ instances.  Many of these were trivial to solve in a few seconds or less on a
 desktop computer.  For these experiments, we used the Ranger supercomputer
 at TACC~\cite{ranger}. Ranger has 16-way SMP nodes containing AMD Opteron
 processors. The nodes are interconnected using Infiniband technology in a
-fully-CLOS topology providing a 1GBps point-to-point bandwidth. We used Charm++'s \texttt{net-ibverbs} machine layer build and $-O3$ optimization for these experiments.
+fully-CLOS topology providing a 1GBps point-to-point bandwidth. We used {\sc Charm++}'s \texttt{net-ibverbs} machine layer build and $-O3$ optimization for these experiments.
 
 The running times and speedups for two of the more challenging instances are shown in Tables~\ref{tab:prob4}--\ref{tab:prob5}.   These tables
 show the results for runs on one to $1,024$ cores.  Each column corresponds to
@@ -1055,6 +1057,8 @@ contrary to the approach in~\cite{nance06reasoning}, our approach is readily
 adaptable to sampling algorithms.  Given a sample size that matches available
 memory, any single sequence of moves is readily extractable without the
 computational expense of a theorem prover or SAT solver.
+
+The effect of load balancing and computational granularity on combinatorial search problems has been studied before~\cite{sun11adaptive,WeatherAmpiSBAC10}. In this work, we addressed the parallelization of an information set generation algorithm and studied the impact of these factors applied to game tree applications. %We explored an application  which has largely been unexplored by the HPC community  
 
 %\Section{Conclusion Future Work}
 %We have shown that information set generation for Kriegspiel can be efficiently parallelized in a way that scales up to at least 1,024 processors.
@@ -1585,6 +1589,6 @@ ordering heuristics.
 %%\end{figure}
 
 \bibliographystyle{IEEEtran}
-\bibliography{paper,cited}
+\bibliography{paper,cited,group}
 
 \end{document}
