@@ -155,7 +155,7 @@ point would be affected by the quality of those players' cards.  However, the se
 {\em possible} hands for all of the opponents is easy to conceive and
 enumerate.
 
-However, in the game of Kriegspiel, information set generation is much more complicated.
+However, for many games (such as Kriegspiel), information set generation is much more complicated.
 After the first move by the opponent, a player faces uncertainty about the
 location of the opponent's pieces.  Unlike Poker, it is not possible to simply
 permute all of the opponent's possible pieces over all of the squares not
@@ -169,7 +169,7 @@ The primary contributions of this work are the following:
 \begin{itemize}
 \item
  We describe an
-approach to efficient parallelization of an application which is not typical of
+approach to efficient parallelization of an application - information set generation,  which is not typical of
 high performance computing and scientific domain, yet important because of its usefulness in the field of artificial intelligence.
 \item
  We present scalability results for our
@@ -190,13 +190,14 @@ Section~\ref{Results} followed by comparison with previous results and some disc
 conclude with a discussion of future work.
 
 
-\section{Kriegspiel}\label{Kriegspiel}
+\section{Background}\label{Kriegspiel}
 Information Set Generation is the process of identifying the nodes in an
 imperfect information game tree that are consistent with a player's
 observations~\cite{richards12information}. Here, we present our techniques and
 results in the context of a particular game: Kriegspiel~\cite{li94chess}.
 However, the techniques and framework presented in this paper are general and
 can be applied to ISG in other imperfect information games.
+%\subsection{Kriegspiel}
 
 Kriegspiel, or partially observable chess,  was invented by Henry Michael
 Temple in 1899.  Historically, the game has required three parties: two
@@ -1119,8 +1120,8 @@ The effect of load balancing and computational granularity on combinatorial sear
 %allocation issues that could be improved. 
 
 \section{Conclusion and Future Work}
-We have shown that information set generation for Kriegspiel can be efficiently
-parallelized.  The opportunities for parallelism increase as the problem size
+In this paper, we showed that information set generation for Kriegspiel can be efficiently
+parallelized.  Through extensive experimentation, we demonstrated that the choice of a suitable load balancing strategy and optimal grain size control is crucial to achieve good scalability for parallel ISG. The opportunities for parallelism increase as the problem size
 increases.  Our algorithm has performed well on problems with information sets
 with as many as 65 million nodes --- much larger than any other treatment of the
 problem that we are aware of.  
