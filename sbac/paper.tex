@@ -105,7 +105,7 @@ Information Set Generation (ISG) is the identification of the set of paths in an
 imperfect information game tree that are consistent with a player's
 observations.  The ability to reason about the possible game history is
 critical to the performance of game-playing agents.  ISG represents a class of
-combinatorial search problems which is computationally intensive but difficult
+combinatorial search problems which is computationally intensive but challenging
 to efficiently parallelize.
 
 In this paper, we address the parallelization of information set generation in
@@ -119,7 +119,7 @@ exceeding previous scalability results for game tree search applications.
 In imperfect information games, players do not have access to full knowledge of
 the world. Examples of imperfect information include hidden cards in
 Poker~\cite{billings02challenge} or Bridge~\cite{ginsberg96partition}, hidden
-tiles in Scrabble~\cite{richards07opponent}, or hidden pieces 
+tiles in Scrabble~\cite{richards07opponent}, or hidden pieces in 
 Kriegspiel (partially observable chess)~\cite{li94chess}. The game tree nodes
 that are indistinguishable to a player because they differ only in the
 information that is hidden to the player by rule compose that player's {\em
@@ -129,7 +129,7 @@ playing imperfect information games well~\cite{schofield12hyperplay}.
 
 Information Set Generation (ISG) is an operation that game tree search agents
 can use to identify nodes in the game tree that are consistent with their
-observations~\cite{richards12information}.  Because the operation is
+observations~\cite{richards12information}.  Since the operation is
 computationally intensive and may be repeatedly applied by a decision-making
 agent, its efficiency is a key factor in an agent's overall performance.   
 
@@ -137,7 +137,7 @@ The term {\em belief state} is sometimes used interchangeably with information
 set to refer to a probability distribution over possible worlds.  The latter
 term comes from the game theory community and is preferred here.  A node in a
 game tree denotes not only the current state of the game, but also uniquely
-defines a path from the initial state or root node.  Thus, a game tree node
+defines a path from the initial state or root node.  Hence, a game tree node
 implicitly encodes not only the current state of the game but also the complete
 history of all decisions made by all players up to that point in the game,
 including the outcome of any chance moves such as dice rolls or card shuffling.
@@ -153,7 +153,7 @@ point would be affected by the quality of those players' cards.  But the set of
 {\em possible} hands for all of the opponents is easy to conceive and
 enumerate.
 
-In the game of Kriegspiel, information set generation is much more complicated.
+However, in the game of Kriegspiel, information set generation is much more complicated.
 After the first move by the opponent, a player faces uncertainty about the
 location of the opponent's pieces.  Unlike Poker, it is not possible to simply
 permute all of the opponent's possible pieces over all of the squares not
@@ -163,16 +163,24 @@ the general case, finding the nodes in an information set is a combinatorial
 search problem.
 
 In this work, we show that ISG for Kriegspiel can be efficiently parallelized.
-The primary contributions of this work are the following. We describe an
+The primary contributions of this work are the following:
+\begin{itemize}
+\item
+ We describe an
 approach to efficient parallelization of an application which is not typical of
-high performance computing domain. We present scalability results for our
+high performance computing domain.
+\item
+ We present scalability results for our
 parallel implementation of an information set generation algorithm for the game
-of Kriegspiel using problem instances from real games. Further, we demonstrate
-the effects of load balancing strategy and grainsize on parallel performance. 
+of Kriegspiel using problem instances from real games. We achieve results which are unprecendented in game tree search application. 
+\item
+We demonstrate
+the effects of load balancing strategy and grainsize on the parallel performance of our implementation. 
+\end{itemize}
 
-The paper is organized as follows.  In Section~\ref{Kriegspiel}, we review
+The remainder of the paper is organized as follows.  In Section~\ref{Kriegspiel}, we review
 necessary background material, including the rules of Kriegspiel. Next, in
-Section~\ref{info} we describe the nature of the information set generation
+Section~\ref{info}, we describe the nature of the information set generation
 problem and the algorithm used.  In Section~\ref{ParSSSE}, we describe our
 parallel implementation, including the {\sc Charm++} Parallel State Space
 Search Engine (ParSSSE) platform.  We then provide our experimental results in
@@ -1094,8 +1102,10 @@ computational expense of a theorem prover or SAT solver.
 We have shown that information set generation for Kriegspiel can be efficiently
 parallelized.  The opportunities for parallelism increase as the problem size
 increases.  Our algorithm has performed well on problems with information sets
-with as many as 65 million nodes---much larger than any other treatment of the
-problem that we are aware of.  Because the algorithm can be efficiently
+with as many as 65 million nodes --- much larger than any other treatment of the
+problem that we are aware of.  
+
+Since the algorithm can be efficiently
 parallelized, it would be reasonable to explore using it in a full Kriegspiel
 player.  It remains to be seen whether these scalability properties hold over a
 wide variety of playing styles and problem instances.  We suspect that fruitful
