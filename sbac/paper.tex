@@ -72,6 +72,7 @@
 
 \title{Parallel Information Set Generation for Kriegspiel 
        }
+\title{Parallelizing  Information Set Generation for Game Tree Search Applications} 
 
 \author{
 \IEEEauthorblockN{Mark Richards, Abhishek Gupta, Osman Sarood and Laxmikant V. Kal\'e\\}
@@ -168,11 +169,11 @@ The primary contributions of this work are the following:
 \item
  We describe an
 approach to efficient parallelization of an application which is not typical of
-high performance computing domain.
+high performance computing and scientific domain, yet important because of its usefulness in the field of artificial intelligence.
 \item
  We present scalability results for our
 parallel implementation of an information set generation algorithm for the game
-of Kriegspiel using problem instances from real games. We achieve results which are unprecendented in game tree search application. 
+of Kriegspiel using problem instances from real games. We achieve results which are unprecedented in game tree search application. 
 \item
 We demonstrate
 the effects of load balancing strategy and grainsize on the parallel performance of our implementation. 
@@ -283,15 +284,15 @@ ultimately allowed by the referee would also be a legal move in chess.
 \label{info}
 %\subsection{Information Set Generation}
 The concept of information sets is perhaps best explained through an example. 
-Figures ~\ref{listing} show a full game listing and the associated pictorial progression of an actual
+Figures~\ref{listing}, \ref{fig:figure1} and~\ref{fig:figure2} show a full game listing and the associated pictorial progression of an actual
 Kriegspiel game~\cite{li94chess}.  We have adopted the notation used by Wolfe for Berkeley Kriegspiel~\cite{wolfe07exploiting}.  Each numbered entry shows one complete turn for both White and Black.  The actual move is shown
-first followed by a list of referee announcements.  Captures announcements are prefixed with an X and give the location
+first followed by a list of referee announcements.  Capture announcements are prefixed with an X and give the location
 of the captured piece.  Similarly, pawn try announcements are prefixed with T.  Attempted moves that were ultimately
 declared illegal are shown in a list following the `:'.  
 
 Figure~\ref{fig:figure1} shows the true state of the game after nine moves by
 each player.  Figure~\ref{fig:figure2} shows White's perspective of the game at
-that coin. At move 9, Black attempts to block a
+that point. At move 9, Black attempts to block a
 potential threat along the diagonal by moving a pawn to g6, then attempts to
 escape or capture a threat at f7.  When both of these attempts fail, Black can
 infer that his king is being threatened by a protected bishop or queen at f7.
@@ -456,19 +457,6 @@ Black's observations up to that point.
 \textbf{The Information Set Generation}
 (ISG) operation can be formulated as a combinatorial search problem.  The input to the algorithm is a list
 of $t$ observations for one player $k$ (denoted $o_{1:t}^{(k)}$ in a Kriegspiel game.    
-
-The nodes in the search tree at depth $n$ correspond possible to possible move 
-sequences of $n$ plies from the start state.  (A sequence of $t$ actions from
-the start state is denoted $a_{1:t}$.) There is a search space variable for
-each ply in the game, and the values that a variable can take on are all
-possible legal moves.  Information set generation, then, is an all-solutions
-search through the space.  Whenever a node in the search tree is found to be
-inconsistent with the actual observation given in the input, the subtree rooted
-at that node is pruned (i.e., search is discontinued along that path).  There
-are three types of observations that must match in order for a state $s$ to be
-included in the information set $I$ at depth $t$: check status, pawn tries, and
-illegal moves available/attempted.
-
 \begin{figure}[htpb]
 \small
 %\begin{algorithm}
@@ -492,6 +480,19 @@ illegal moves available/attempted.
 \caption{Algorithm}
 \label{codelisting1}
 \end{figure}
+
+
+The nodes in the search tree at depth $n$ correspond to possible move 
+sequences of $n$ plies from the start state.  (A sequence of $t$ actions from
+the start state is denoted $a_{1:t}$.) There is a search space variable for
+each ply in the game, and the values that a variable can take on are all
+possible legal moves.  Information set generation, then, is an all-solutions
+search through the space.  Whenever a node in the search tree is found to be
+inconsistent with the actual observation given in the input, the subtree rooted
+at that node is pruned (i.e., search is discontinued along that path).  There
+are three types of observations that must match in order for a state $s$ to be
+included in the information set $I$ at depth $t$: check status, pawn tries, and
+illegal moves available/attempted.
 
 
 Figure~\ref{codelisting1} shows the function at the heart of our information set generation algorithm.  The actual
@@ -591,8 +592,8 @@ machine-independent infrastructure for parallel computation.  The language and
 its accompanying runtime system have been ported to many shared-memory and
 distributed-memory platforms.
 
-In contrast to other popular parallel programming frameworks such as {\sc MPI}
-and {\sc OpenMP}, the {\sc Charm++} language is based on object-oriented
+In contrast to other popular parallel programming frameworks such as {\sc MPI}~\cite{MPI}
+and {\sc OpenMP}~\cite{OpenMP}, {\sc Charm++} is based on object-oriented
 programming principles.  The programmer is responsible to decompose a problem
 into a collection of objects that represent elements of work to be done.
 Typically the number of these work objects, called {\em chares}, far exceeds
@@ -603,7 +604,7 @@ order to improve the overall load balancing.
 Chares communicate with each other via
 asynchronous message passing.  They can invoke {\em entry methods} on other
 objects, which are executed according to a schedule set by the {\sc Charm++}
-runtime system.  The runtime is responsible to interleave computation and
+runtime system.  The runtime is responsible for interleaving computation and
 communication tasks in order to maximize efficiency.  To facilitate this, each
 processor maintains an {\em incoming queue} of messages targeted to chares that
 it currently holds.  A corresponding {\em outgoing queue} collects messages
@@ -627,26 +628,26 @@ better adaptive load balancing is achieved.
 Sun \etal have developed the Parallel State Space Search Engine ({\sc ParSSSE})
 within the {\sc Charm++} framework, which exposes an API that is useful for a
 variety of graph-based and tree-based search problems~\cite{sun11adaptive}. In
-{\sc ParSSSE} the fundamental unit of work is the processing of a node.
+{\sc ParSSSE} the fundamental unit of work is the processing of a tree node.
 Generally, this means identifying whether the node corresponds to a solution
 and/or generating descendant nodes and spawning work tasks related to them. A
 task is {\em terminal} if it spawns no children. 
 
 A {\em grainsize control} parameter specifies a bound on the size of a piece of
-work that can be passed along to the runtime system for scheduling.  Once a
+work that can be passed along to the runtime system for scheduling (in other words, computational granularity of a task which will be performed sequentially).  Once a
 task has been subdivided into an appropriate number of subtasks, those tasks
 run to completion on a single processor without preemption and without generating
 any additional parallel tasks.  If the grainsize is too large, then the number
 of pieces of work to be done may be lower than the number of processors
 available, forcing some processors to idle.  If the grainsize is too small,
 then the runtime system is flooded with a large number of trivial tasks, and
-the system gets bogged down by the overhead of creating and scheduling tasks
+application performance is degraded because of the overhead of creating and scheduling tasks
 instead of actually doing them.  {\sc ParSSSE} supports adaptive grainsize
 management, so that the threshold for sequential processing can be changed
 during the execution of the program, depending on the properties of the problem
-and/or the realtime performance analysis of the runtime system.
+and/or the realtime performance analysis by the runtime system.
 
-{\sc ParSSSE} currently supports two load balancing strategies.  The
+Charm++ (and hence {\sc ParSSSE}) provides multiple load balancing strategies and we used three of them in our application. We describe these strategies next. The
 first is the randomized strategy.  In this approach, each newly created object
 is assigned to a random processor.  Generally, if a large enough number of 
 chares is created, the system will achieve an approximately uniform
@@ -673,6 +674,8 @@ overhead is only incurred if at least one processor is idling.  Furthermore,
 because victims respond by sending the highest priority work, the most
 important tasks are scheduled sooner.  
 
+Another strategy we evaluated is the neighbor based load balancing which imposes a virtual topology on the processors and load exchange occur between neighbors only. In this strategy, the load balancing is initiated by overloaded processors. When a processor becomes overloaded, it sends work to its neighbors. 
+
 In addition to these strategies, a user may define its own load balancing
 strategies by overriding {\sc Charm++} task dispersal functions.
 
@@ -684,26 +687,6 @@ implementation using a randomly selected problem instance. Next, we show that
 our implementation performs equally well for instances from actual games.
 
 \subsection{Analysis using Random Instance} 
-The performance results reported in this section were obtained by running our
-program on Blueprint with up to 1,024 processors. This system was composed of
-120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was
-decommissioned in June 2011 and is no longer in operation.
-
-Table~\ref{speedups} shows the performance results for our algorithm on a
-randomly selected problem instance in which the size of the information set was
-about 4.5 million.  This instance is not necessarily representative of all
-games or states of the game, but it was not cherry-picked in any way. The table
-shows that the problem is indeed highly parallizable. The speedups are nearly
-linear for up to 32 processors, and the speedups continue to increase even up
-to 1,024 processors. In this particular instance, the sequential algorithm
-takes almost 25 minutes to run.  But when parallelized on 1,024
-processors---perfectly reasonable resource usage on modern hardware---the
-search takes less than three seconds.  This is a speedup of 576 times! In a
-tournament where each player is allotted an average of five minutes per move,
-an ISG operation that requires 25 minutes or more would be prohibitively
-expensive.  On the other hand, if the operation can be done in under three
-seconds, ISG can be used as a subroutine in the decision-making process
-(see~\cite{parker05game}). 
 
 \begin{table}[ht]
 
@@ -711,7 +694,7 @@ seconds, ISG can be used as a subroutine in the decision-making process
 processors.  The input observations were from the 10th ply of the game tree and
 the size of the information set in this instance is 4,495,121.}
 \centering
-\begin{tabular}{rrr}
+\begin{tabular}{ccc}
 {\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
 1	&	1524	&	1\\
 2	&	812	&	1.88\\
@@ -730,21 +713,43 @@ the size of the information set in this instance is 4,495,121.}
 \label{speedups}
 \end{table}
 
+The performance results reported in this section were obtained by running our
+program on Blueprint with up to 1,024 processors. This system was composed of
+120 POWER5+ nodes, each having 16 cores and 64GB of memory. The system was
+decommissioned in June 2011 and is no longer in operation.
+
+
+Table~\ref{speedups} shows the performance results for our algorithm on a
+randomly selected problem instance in which the size of the information set was
+about 4.5 million.  This instance is not necessarily representative of all
+games or states of the game, but it was not cherry-picked in any way. The table
+shows that our implementation achieves good parallel scaling. The speedups are nearly
+linear for up to 32 processors, and the speedups continue to increase even up
+to 1,024 processors. In this particular instance, the sequential algorithm
+takes almost 25 minutes to run.  However, when parallelized on 1,024
+processors --- perfectly reasonable resource usage on modern hardware --- the
+search takes less than three seconds.  This is a speedup of 576 times! In a
+tournament where each player is allotted an average of five minutes per move,
+an ISG operation that requires 25 minutes or more would be prohibitively
+expensive.  On the other hand, if the operation can be done in under three
+seconds, ISG can be used as a subroutine in the decision-making process
+(see~\cite{parker05game}). 
+
 
 
 \subsubsection{Effect of Load Balancing}
 
-In our next round of experiments, we set out to compare load-balancing
-strategies for the problem.  We used the random, work stealing, and
+In our next round of experiments, we evaluated the impact of load-balancing
+strategies on our application's performance.  We used the random, work stealing, and
 neighborhood balancing strategies that are available in the general purpose
 search engine.  These results are shown in Figure~\ref{3schemes}.  Our results
 show that there was actually little variation in performance across the
 different strategies.  Across all of our experiments, the work stealing
-approach appeared to be consistently---if only marginally---better than the
+approach appeared to be consistently --- if only marginally --- better than the
 others.  Our hypothesis here is that the nodes are rarely starved for work.  In
 other words, perhaps the very nature of the problem means that the load is
 naturally well-balanced and that the load-balancer rarely needs to do a
-significant amount of redistribution.  This is probably also related to the
+significant amount of redistribution.  This is also related to the
 fact that we are doing an all-solutions search. 
 \begin{figure}[ht]
 \centering
@@ -755,8 +760,9 @@ fact that we are doing an all-solutions search.
 \end{figure}
  
 \subsubsection{Effect of Grainsize}
+\label{grainsize}
 
-\begin{figure*}[!ht]
+\begin{figure*}[ht]
 \centering
 \subfigure[Depth 8]{
 \includegraphics[width=2.1in]{plots/dep8.pdf}
@@ -770,41 +776,28 @@ fact that we are doing an all-solutions search.
 \includegraphics[width=2.1in]{plots/dep12.pdf}
 \label{dep12}
 } 
-\caption{Grainsize Control for different problem sizes}
+\caption{Grainsize Control for different problem sizes. Sequential threshold denoted the depth in the search tree after which the remainder of the task (game tree search) is performed sequentially. Grain size = max game tree depth - sequential threshold.}
 %\vspace{-0.1in}
 \label{fig:dep}
 \end{figure*}
 %
-\begin{figure}[ht]
-\centering
-\begin{minipage}{0.7\linewidth}
-\includegraphics[width=\columnwidth]{plots/3depths.pdf}
-\end{minipage}
-\centering
-\begin{minipage}{0.7\linewidth}
-\includegraphics[width=\columnwidth]{plots/3depthsnolog.pdf}
-\end{minipage}
-\caption{(Top) Log-log plot of running time for three different sizes of problem as the number of cores used increases.
-(Bottom) Same data with a linear y-axis for the running time, to help see the isoefficiency.}
-\label{3depths}
-\end{figure}
 
-Next, we evaluate the effect of grainsize on execution time.  The results are
-shown in Tables~\ref{dep8}--~\ref{dep12}.  It is clear that there is a ``sweet
+
+Next, we evaluate the effect of grainsize on execution time. 
+Grainsize control is obtained in our implementation using a run-time argument called \emph{sequential threshold}, which specifies the depth in the search tree up to which parallel tasks would be created. With this terminology, grain size = max game tree depth - sequential threshold. Figures~\ref{dep8}--~\ref{dep12} illustrate the variation in application performance with sequential threshold for three different problem sizes.  It is clear that there is a ``sweet
 spot'' for each problem size.  (At least it is clear for this particular
 instance.  It is possible that there would be different behavior on different
-problem instances.)  When the grainsize is too small, the overall computation
+problem instances.)  When the sequential threshold is large (grainsize is too small), the overall computation
 is hampered by excessive parallel overhead (communication, queueing of nodes to
-expand, load balancing operations).  On the other hand, when the grainsize is
-too large, it becomes too difficult to ensure that some processors are not
+expand, load balancing operations).  On the other hand, when the sequential threshold is too small (grainsize is
+too large), it becomes too difficult to ensure that some processors are not
 idling with no work to do while a small number of processors are busy doing
 large chunks of work.  
 
-In our experiments, the optimal grainsize is clearly related to the size of the
-problem, the depth of the search tree.  The optimal sequential threshold seems
-to be $2-4$ less than the problem depth.  Since the depth of all solutions is
+In our experiments, the sequential threshold is clearly related to the size of the
+problem --- the depth of the search tree.  The optimal sequential threshold is $2-4$ less than the problem depth.  Since the depth of all solutions is
 the same for each problem instance, this means that the number of levels that
-should be searched sequentially is fairly consistent across problem sizes.  We
+should be searched sequentially (that is, optimal grain size) is fairly consistent across problem sizes.  We
 noted that the number of solutions found---in other words, the size of the
 information sets---is typically fairly large with respect to the total number
 of nodes expanded.  (We estimate that it was often $30-40\%$).  This high
@@ -817,19 +810,28 @@ which is encouraging.
 
 
 We next study the variation in the efficiency of the parallelization of the
-algorithm as size of the problem increases.  To test this, we varied the number
+algorithm as size of the problem increases.  Here, we varied the number
 of plies in the test instance from 8 to 12. We used the work stealing
 load-balancing strategy.  
 
 The results are shown in Figure~\ref{3depths}.  In the easiest case (depth 8),
 there is not enough additional parallel work to justify the jump from 256 to
 1,024 processors, and performance actually degrades.  Aside from this anomaly,
-however, we see consistent speedups as we increase the number of processors.
-The plot on the right helps to illustrate the good isoefficiency of the
-problem.  As the size of the problem increases, the amount of parallelizable
-work available also increases, and therefore the steepness of the speed curve
-is higher for larger problem sizes, as the number of processors increases.
-
+however, we see consistent speedups as we increase the number of processors. 
+The plot on the bottom helps to illustrate the effect of problem size on parallel efficiency (defined as Speedup/P) and helps understand the iso-efficiency of the problem. Iso-efficiency~\cite{b:grama-isoefficiency} means how should the problem size be increased with increasing number of processors to maintain same level of parallel efficiency. As the size of the problem increases, the amount of parallelizable work available also increases, and hence parallel efficiency is higher for larger problem sizes and constant number of processors (Figure~\ref{3depths} bottom). As the number of processors increases, parallel efficiency decreases for constant problem size. Figure~\ref{3depths} suggests that in parallel information set generation, to maintain constant parallel efficiency, problem size (search depth) should be roughly increased by two when the number of processor in increased by 4 times.
+\begin{figure}[ht] 
+\centering
+\begin{minipage}{0.7\linewidth}
+\includegraphics[width=\columnwidth]{plots/3depths.pdf}
+\end{minipage}
+\centering
+\begin{minipage}{0.7\linewidth}
+\includegraphics[width=\columnwidth]{plots/3depthspe.pdf}
+\end{minipage}
+\caption{(Top) Execution time for three different sizes of problem as the number of cores used increases.
+(Bottom) Parallel Efficiency (wrt to 16 cores) vs number of cores, to help see the effect of problem size and iso-efficiency}
+\label{3depths}
+\end{figure}
 \subsection{Real Game Instance}
 %\begin{figure}[ht]
 % \centering \includegraphics[viewport= 280 200 300 550, scale=0.35]{images/KriegspielProblem4.pdf} %
@@ -851,11 +853,33 @@ is higher for larger problem sizes, as the number of processors increases.
 %\vspace{-0.2in}
 %\end{figure}
 
-\begin{figure}[ht]
- \centering \includegraphics[scale=1]{plots/new.pdf} %
-\caption{Kriegspiel position from 2 games, position 10}
-\label{prob4} 
-\end{figure}
+We also evaluated our information set generation routine on 40 positions from
+actual Kriegspiel games, including human vs. human and computer vs. computer
+instances.  Many of these were trivial to solve in a few seconds or less on a
+desktop computer.  For these experiments, we used the Ranger supercomputer
+at TACC~\cite{ranger}. Ranger has 16-way SMP nodes containing AMD Opteron
+processors. The nodes are interconnected using Infiniband technology in a
+fully-CLOS topology providing a 1GBps point-to-point bandwidth. 
+
+The running times and speedups for two of the more challenging instances are shown in Tables~\ref{tab:prob4}--\ref{tab:prob5}.   These tables
+show the results for runs on one to $1,024$ cores.  Each column corresponds to
+a different sequential threshold parameter - the number of
+levels of the search tree that are searched in parallel.  Up to that threshold,
+each node that is generated spawns a new piece of work, which the {\sc Charm++}
+runtime schedules to execute on one of the processing elements according to its
+load balancing strategy.  Beyond the threshold the entire subtree is searched to
+completion on a single processor, with no additional parallel overhead. 
+
+These results confirm the observations made in Section~\ref{grainsize}. The optimal sequential threshold varies for the different numbers of cores and
+the pattern is consistent across problem instances.  The optimal
+sequential threshold increases as the number of cores increases.  This is expected,
+because as this parameter grows, the number of distinct pieces of work
+increases.  When the number of chares per processor is high, much of
+the overhead of parallelization is wasted.  But as the number of cores
+increases, the work can be efficiently broken up into smaller pieces and spread to all the cores.  With more pieces of work, it becomes easier to balance
+the load.
+
+
 
 \begin{table}[ht]
 \caption{Running times in seconds and speedups (after $|$), to find full
@@ -864,7 +888,8 @@ grainsize (G) for each number of cores (PE) is shown in bold.}
 
 
 \centering
-\begin{tabular}{rrrrr}
+%\begin{tabular}{rrrrr}
+\begin{tabular}{ccccc}
 PE/G & 2 & 4 & 6 & 8 \\
 1 & {\bf 177$|$1} & 178$|$0.99 & 1844$|$0.96 & 493$|$0.36 \\
 4 & 71$|$2.48 & 53$|$3.34 & {\bf 48$|$3.63} & 75$|$2.35 \\
@@ -878,12 +903,12 @@ PE/G & 2 & 4 & 6 & 8 \\
 \end{table}
 
 \begin{table}[th]
-
 \caption{Running times, in seconds and speedups (after $|$), to find full
 information set of size 5,099,257 at position 10 of Game 6 Kbot-Darkboard 2006.
 Optimal grainsize for each number of cores is shown in bold.}
 \centering
-\begin{tabular}{rrrrr}
+%\begin{tabular}{rrrrr}
+\begin{tabular}{ccccc}
 PE/G & 2 & 4 & 6 & 8 \\
 1 & 617$|$1 & {\bf 612$|$1} & 650$|$0.95 & 3312$|$0.19 \\
 4 & 213$|$2.89 & 170$|$3.63 & {\bf 158$|$3.89} & 367$|$1.68 \\
@@ -895,34 +920,11 @@ PE/G & 2 & 4 & 6 & 8 \\
 
 \label{tab:prob5}
 \end{table}
-
-We also evaluated our information set generation routine on 40 positions from
-actual Kriegspiel games, including human vs. human and computer vs. computer
-instances.  Many of these were trivial to solve in a few seconds or less on a
-desktop computer.  For these experiments, we used the Ranger supercomputer
-at TACC~\cite{ranger}. Ranger has 16-way SMP nodes containing AMD Opteron
-processors. The nodes are interconnected using Infiniband technology in a
-fully-CLOS topology providing a 1GBps point-to-point bandwidth. 
-
-The running times and speedups for two of the more challenging instances on
-Ranger are shown in Tables~\ref{tab:prob4}--\ref{tab:prob5}.   These tables
-show the results for runs on one to $1,024$ cores.  Each column corresponds to
-a different grainsize parameter.  In this case, the grainsize is the number of
-levels of the search tree that are searched in parallel.  Up to that threshold,
-each node that is generated spawns a new piece of work, which the {\sc Charm++}
-runtime schedules to execute on one of the processing elements according to its
-load balancing strategy.  Above the threshold the entire subtree is searched to
-completion on a single processor, with no additional parallel overhead. 
-
-Note that the optimal grainsize varies for the different numbers of cores and
-the pattern is consistent across problem instances.  The optimal
-grainsize increases as the number of cores increases.  This makes sense,
-because as this parameter grows, the number of distinct pieces of work
-increases.  When the number of chares per processor is high, much of
-the overhead of parallelization is wasted.  But as the number of cores
-increases, the work can be efficiently broken up into smaller pieces and doled
-out to all the cores.  With more pieces of work, it becomes easier to balance
-the load.
+\begin{figure}[ht]
+ \centering \includegraphics[scale=1]{plots/new.pdf} %
+\caption{Performance results for Information Set Generation for 2 games of Kriegspiel}
+\label{prob4} 
+\end{figure}
 
 Note that both problems scale well even up to 1,024 processors.  We achieve a
 speedup of $443$ in the game between humans and up to $536$ in the game between
@@ -930,6 +932,7 @@ computers.  Figure~\ref{prob4} shows the plots of the running
 times on these two problems with the best grainsize for each core setting.  These plots show that the
 running time continues to decrease as the number of cores increases.
 
+\section{Comparison with previous results, Discussion}
 Our results compare favorably to previous work in parallel game tree search,
 shown in Table~\ref{bestspeedups}.  The previous best parallelization results
 were for parallelizing alpha-beta pruning.  Ferguson and Korf achieved a
@@ -940,19 +943,6 @@ loss.  Parts of the game tree that are searched during the parallel execution
 would have been pruned had the algorithm run sequentially.  This is a
 fundamental limitation in alpha-beta search. 
 
-\begin{table}[ht]
-\caption{Best Speedups reported for game tree applications.}
-\centering
-\begin{tabular}{lrrc}
-{\bf Authors} & {\bf Game} & {\bf Year} & {\bf Best Speedup (cores)} \\
-Ferguson \& Korf & Othello & 1988 & 12(32) \\
-Felton \& Otto & Chess & 1988 & 100(256) \\
-Richards \etal & Kriegspiel & 2012 & 178(256) \\
-Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
-\end{tabular}
-\label{bestspeedups}
-\end{table}
-
 For partially observable games, information set generation represents a
 different variety of tree search that does not suffer from speculative loss.
 All of the nodes that are visited in parallel also would have been visited in a
@@ -961,6 +951,8 @@ is load balancing: some parts of the tree will be pruned at a higher level than
 others, resulting in a wide variation in cost for each subtree.  The {\sc
 Charm++/ParSSSE} framework is perfectly suited to handle the load balancing
 issues that this problem naturally presents.
+
+
 
 Note also that information set generation is just one subroutine needed to
 reason about partially observable games.  Once plausible game histories have
@@ -973,7 +965,18 @@ forward search operation can be performed independently in parallel. With these
 two additional levels of parallelism on top of the information set generation
 problem, it is likely that the problem of playing partially observable
 games could scale efficiently to millions of processors or more.
-
+\begin{table}[ht]
+\caption{Best Speedups reported for game tree applications.}
+\centering
+\begin{tabular}{lrrc}
+{\bf Authors} & {\bf Game} & {\bf Year} & {\bf Best Speedup (cores)} \\
+Ferguson \& Korf & Othello & 1988 & 12(32) \\
+Felton \& Otto & Chess & 1988 & 100(256) \\
+Richards \etal & Kriegspiel & 2012 & 178(256) \\
+Richards \etal & Kriegspiel & 2012 & {\bf 536(1024)} \\
+\end{tabular}
+\label{bestspeedups}
+\end{table}
 \section{Related Work}
 \label{Related}
 An overview of the theory of imperfect information games and other basic topics
@@ -1092,7 +1095,7 @@ computational expense of a theorem prover or SAT solver.
 %
 %There are certainly several places where the efficiency of the details of each node expansion could be improved.  Many
 %of these would reduce the overall running time but would not necessarily be interesting from the standpoint of
-%evaluating the efficiency and isoefficiency of parallelization.  For example, in checking to see if a position leaves a
+%evaluating the efficiency and iso-efficiency of parallelization.  For example, in checking to see if a position leaves a
 %player in check, we currently utilize existing helper functions that generate possible moves for the opponent.  It would
 %be possible to write a more specialized function that focuses only on the position of the king in question and looks
 %only at the squares along its rank, file, diagonals, and knight-edges for threats.  There are also some memory
@@ -1569,6 +1572,6 @@ ordering heuristics.
 %%\end{figure}
 
 \bibliographystyle{IEEEtran}
-\bibliography{paper}
+\bibliography{paper,cited}
 
 \end{document}
