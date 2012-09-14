@@ -13,6 +13,6 @@ set output "new.eps"
 
 plot "1.dat" using 1:2 title "Game 6 Kbot-Darkboard 2006 (5.1 million states)" with linespoints lw 3 lt 2, \
 "2.dat" using 1:2 title "Virgil-David 1969 (764K states)" with linespoints lw 3 lt 1, \
-"1.dat" using 1:(177/$1) title "Ideal Scaling" with linespoints lw 3 lt 3, \
-"2.dat" using 1:(612/$1)  notitle with linespoints lw 3 lt 3
+"1.dat" using 1:(177/$1) title "Ideal Scaling" with linespoints lw 3 lt 3 pt 3, \
+"2.dat" using 1:(612/$1)  notitle with linespoints lw 3 lt 3 pt 3
 
