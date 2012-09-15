@@ -125,7 +125,7 @@ the world. Examples of imperfect information include hidden cards in
 Poker~\cite{billings02challenge} or Bridge~\cite{ginsberg96partition}, hidden
 tiles in Scrabble~\cite{richards07opponent}, or hidden pieces in 
 Kriegspiel (partially observable chess)~\cite{li94chess}. The game tree nodes
-which are indistinguishable to a player since they differ only in the
+that are indistinguishable to a player since they differ only in the
 information that is hidden to the player by rule compose that player's {\em
 information set.}  The ability to estimate the value of the possible states and
 to reason about the probability distribution over those states is crucial to
@@ -351,12 +351,12 @@ moves.  For example, on move 9, Black attempted three illegal moves.
 \vspace{-0.2in}
 \end{figure}
 
-The listing of a sequence of moves from the perspective of one player lists all of that player's moves exactly and
+The listing of a sequence of moves from the perspective of one player shows all of that player's moves exactly and
 includes the declarations from the referee.  We refer to such a list as a player's observations.  Given a list of
 observations for a sequence of moves, an information set is the set of all possible {\em sequences of moves for both
 players}, that are consistent with those observations.  In other words, any sequence of moves that would have generated
 the same sequence of observations for Black is in Black's information set.  Figure~\ref{abbrevoutput} shows a portion of the
-information set for Black after both player's have made five moves.  From this list of possibilities, Black can infer
+information set for Black after both players have made five moves.  From this list of possibilities, Black can infer
 that White must have a bishop at g5 and a pawn at d6.  There are 25 possible sequences of moves that are consistent with
 Black's observations up to that point. 
 
@@ -463,7 +463,7 @@ Black's observations up to that point.
    
 \textbf{The Information Set Generation}
 (ISG) operation can be formulated as a combinatorial search problem.  The input to the algorithm is a list
-of $t$ observations for one player $k$ (denoted $o_{1:t}^{(k)}$ in a Kriegspiel game.    
+of $t$ observations for one player $k$ (denoted $o_{1:t}^{(k)}$) in a Kriegspiel game.    
 \begin{figure}[htpb]
 \small
 %\begin{algorithm}
@@ -598,7 +598,7 @@ system for parallel processing~\cite{kale93charm,kale09charm}.  {\sc Charm++}
 is an extension to the C++ programming language that provides
 machine-independent infrastructure for parallel computation.  The language and
 its accompanying runtime system have been ported to many shared-memory and
-distributed-memory platforms. {\sc Charm++} is used by many highly scalable scientific applications such as NAMD~\cite{NAMDIPDPS08} and ChaNGa~\cite{2007_ChaNGaScaling}
+distributed-memory platforms. {\sc Charm++} is used by many highly scalable scientific applications such as NAMD~\cite{NAMDIPDPS08} and ChaNGa~\cite{2007_ChaNGaScaling}.
 
 In contrast to other popular parallel programming frameworks such as {\sc MPI}~\cite{MPI}
 and {\sc OpenMP}~\cite{OpenMP}, {\sc Charm++} is based on object-oriented
@@ -682,7 +682,7 @@ overhead is only incurred if at least one processor is idling.  Moreover,
 since victims respond by sending the highest priority work, the most
 important tasks are scheduled sooner.  
 
-Another strategy we evaluated is the neighbor based load balancing which imposes a virtual topology on the processors and load exchange occur between neighbors only. In this strategy, the load balancing is initiated by overloaded processors. When a processor becomes overloaded, it sends work to its neighbors. 
+Another strategy we evaluated is the neighbor-based load balancing which imposes a virtual topology on the processors and load exchange occur between neighbors only. In this strategy, the load balancing is initiated by overloaded processors. When a processor becomes overloaded, it sends work to its neighbors. 
 
 In addition to these strategies, a user may define its own load balancing
 strategies by overriding {\sc Charm++} task dispersal functions.
@@ -845,7 +845,7 @@ The results are shown in Figure~\ref{3depths}.  In the easiest case (depth 8),
 there is not enough additional parallel work to justify the jump from 256 to
 1,024 processors, and performance actually degrades.  Aside from this anomaly,
 however, we see consistent speedups as we increase the number of processors. 
-The plot on the bottom helps to illustrate the effect of problem size on parallel efficiency (defined as Speedup/P) and helps understand the iso-efficiency of the problem. Iso-efficiency~\cite{b:grama-isoefficiency} means how should the problem size be increased with increasing number of processors to maintain same level of parallel efficiency. As the size of the problem increases, the amount of parallelizable work available also increases, and hence parallel efficiency is higher for larger problem sizes and constant number of processors (Figure~\ref{3depths} bottom). As the number of processors increases, parallel efficiency decreases for constant problem size. Figure~\ref{3depths} suggests that in parallel information set generation, to maintain constant parallel efficiency, problem size (search depth) should be roughly increased by two when the number of processor in increased by 4 times.
+The plot on the bottom helps to illustrate the effect of problem size on parallel efficiency (defined as Speedup/P) and helps understand the iso-efficiency of the problem. Iso-efficiency~\cite{b:grama-isoefficiency} quantifies how the problem size should be increased with increasing number of processors to maintain same level of parallel efficiency. As the size of the problem increases, the amount of parallelizable work available also increases, and hence parallel efficiency is higher for larger problem sizes and constant number of processors (Figure~\ref{3depths} bottom). As the number of processors increases, parallel efficiency decreases for constant problem size. Figure~\ref{3depths} suggests that in parallel information set generation, to maintain constant parallel efficiency, problem size (search depth) should be roughly increased by two when the number of processors is increased by 4 times.
 
 \begin{table}[ht]
 \caption{Running times in seconds and speedups (after $|$), to find full
@@ -967,7 +967,7 @@ issues that this problem naturally presents.
 
 \begin{figure}[t]
  \centering \includegraphics[scale=1]{plots/new.pdf} %
-\caption{Performance results for Information Set Generation for two games of Kriegspiel, position ten}
+\caption{Performance results for Information Set Generation for two games of Kriegspiel, position ten.}
 \label{prob4}
 \vspace{-0.2in} 
 \end{figure}
