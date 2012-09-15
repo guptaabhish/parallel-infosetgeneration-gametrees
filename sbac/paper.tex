@@ -12,7 +12,8 @@
 \usepackage{boxedminipage}
 \usepackage[noend]{algpseudocode}
 \usepackage{listings}
-\usepackage{amsmath,amsfonts,latexsym,graphicx}
+\usepackage[cmex10]{amsmath}
+\usepackage{amsfonts,latexsym,graphicx}
 \usepackage[tableposition=top,font=bf]{caption}
 %\usepackage[tableposition=top,font=bf]{caption}
 
@@ -62,6 +63,7 @@
 \newcommand{\etal}{{\em et al.}\ }
 \newcommand{\assign}{\leftarrow}
 \newcommand{\eps}{\epsilon}
+%\renewcommand{\thefootnote}{\fnsymbol{footnote}}
 %\documentstyle[times,art10,twocolumn,latex8]{article}
 
 %------------------------------------------------------------------------- 
@@ -243,14 +245,14 @@ ultimately allowed by the referee would also be a legal move in chess.
    b6 {(:)}
 3. Nc3 {(:Bd8)}
    c5 {(:)}
-4. d5 {(:Bd8;Tc5)}
+4. d5 {(Tc5:Bd8)}
    Na6 {(:)}
 5. d6 {(:)}
-   f6 {(:Td6)}
+   f6 {(Td6:)}
 6. e4 {(:)}
-   fxg5 {(Xg5:Td6;Tg5)}
+   fxg5 {(Td6,Tg5,Xg5:)}
 7. Bc4 {(:)}
-   exd6 {(Xd6:Td6)}
+   exd6 {(Td6,Xd6:)}
 8. Qd5 {(:)}
    Qc7 {(:)}
 9. Qf7+ {(:)} 
@@ -303,7 +305,7 @@ infer that his king is being threatened by a protected bishop or queen at f7.
 The attempt to move to e7 is Black's way of finding out whether the threatening
 piece is a queen or bishop.  When this move fails, black knows it is White's
 queen and ultimately retreats to d8.  Note that the failed moves by White on
-turns 3 and 4 are a result of being blocked by the pawn at e2.
+turns 3 and 4 are a result of being blocked by the pawn at e7.
 
 
 The listing in Figure~\ref{listing} corresponds to the referee's view of the game and would be useful for
@@ -322,18 +324,18 @@ moves.  For example, on move 9, Black attempted three illegal moves.
    ?? {(:0)}
 3. Nc3 {(:Bd8)}
    ??  {(:0)}
-4. d5 {(:Bd8;Tc5)}
+4. d5 {(Tc5:Bd8)}
    ??  {(:0)}
 5. d6 {(:)}
-   ?? {(:0,Td6)}
+   ?? {(Td6:0)}
 6. e4 {(:)}
-   fxg5 {(Xg5:Td6;Tg5)}
+   fxg5 {(Td6,Tg5,Xg5:0)}
 7. Bc4 {(:)}
-   ?? {(Xd6:Td6)}
+   ?? {(Td6,Xd6:0)}
 8. Qd5 {(:)}
    ?? {(:0)}
 9. Qf7+ {(:)} 
-   ?? {:0}
+   ?? {:3}
 10. Qxf8++ {(1-0:)}
 \end{verbatim}
 %\end{verbatim}
@@ -702,7 +704,7 @@ decommissioned in June 2011 and is no longer in operation.
 
 Table~\ref{speedups} shows the performance results for our algorithm on a
 randomly selected problem instance in which the size of the information set was
-about 4.5 million.  This instance is not necessarily representative of all
+about 4.5 million sequences.  This instance is not necessarily representative of all
 games or states of the game, but it was not cherry-picked in any way. The table
 shows that our implementation achieves good parallel scaling. The speedups are nearly
 linear for up to 32 processors, and the speedups continue to increase even up
@@ -751,7 +753,7 @@ large chunks of work.
 
 \caption{Speedups for a randomly selected problem instance on 1--1,024
 processors.  The input observations were from the 10th ply of the game tree and
-the size of the information set in this instance is 4,495,121.}
+the size of the information set in this instance is 4,495,121 sequences.}
 \centering
 \begin{tabular}{ccc}
 {\bf Procs}	&	{\bf Time (s)} 	&	{\bf Speedup}\\
@@ -835,7 +837,7 @@ load-balancing strategy.
 \includegraphics[width=\columnwidth]{plots/3depthspe.pdf}
 \end{minipage}
 \caption{(Top) Execution time for three different sizes of problem as the number of cores used increases.
-(Bottom) Parallel Efficiency (wrt to 16 cores) vs number of cores, to help see the effect of problem size and iso-efficiency}
+(Bottom) Parallel Efficiency (wrt to 16 cores) vs number of cores, to help see the effect of problem size and iso-efficiency.}
 \label{3depths}
 \vspace{-0.3in}
 \end{figure}
@@ -855,7 +857,7 @@ grainsize (G) for each number of cores (PE) is shown in bold.}
 %\begin{tabular}{rrrrr}
 \begin{tabular}{ccccc}
 PE/G & 2 & 4 & 6 & 8 \\
-1 & {\bf 177$|$1} & 178$|$0.99 & 1844$|$0.96 & 493$|$0.36 \\
+1 & {\bf 177$|$1} & 178$|$0.99 & 184$|$0.96 & 493$|$0.36 \\
 4 & 71$|$2.48 & 53$|$3.34 & {\bf 48$|$3.63} & 75$|$2.35 \\
 16 & 34$|$5.19 & 19 $|$9.27& {\bf 12$|$13.8} & 16$|$10.7 \\
 64 & 24 $|$7.25 & 7 $|$23.6& {\bf 3.7$|$47.39} & 4.1$|$43.1 \\
@@ -1137,10 +1139,10 @@ ordering heuristics.
 
 \section*{Acknowledgments}
 
-The authors were supported by grant funding from
+Authors were supported by grants 
 NSF-0904844, DOE DE-SC0001845. We used machine resources on the
 Ranger cluster (TACC), under TeraGrid allocation grant TG-ASC050039N supported
-by NSF.  
+by NSF. First and second author contributed equally. 
 %\Section{Appendix A}
 %The purpose of this figure is simply to help visualize the concept of information sets in game trees.  The tree for
 %Kriegspiel is very difficult to visualize/depict (even an interesting part of the tree).  Figure~\ref{fulltree} shows
