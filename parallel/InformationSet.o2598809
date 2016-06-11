@@ -1,0 +1,362 @@
+TACC: Setting memory limits for job 2598809 to unlimited KB
+TACC: Dumping job script:
+--------------------------------------------------------------------------------
+#!/bin/bash
+#
+#$-V
+#
+#$-cwd
+#
+#$-N InformationSet 
+#
+#$-j y
+#
+#$-o $JOB_NAME.o$JOB_ID
+#
+#$-e $JOB_NAME.e$JOB_ID
+#
+#$-pe 16way 64 
+# number of total cores above
+#
+#$-q development
+#
+#$-M gupta59@illinois.edu
+#
+#$-m be
+#
+#$-l h_rt=02:00:00
+#
+#$ -A TG-ASC050039N
+
+
+~/gennodelist ~/.nodelist.$JOB_ID
+#make test is retarded about nodelist
+# change below
+P="64"
+K="2 4 6 8 10"
+for i in $P
+do
+for k in $K
+do
+./charmrun ++scalable-start ./hc 4 10 $k  \
+   +p$i  ++nodelist  ~/.nodelist.${JOB_ID}  \
+   +setcpuaffinity
+./charmrun ++scalable-start ./hc 5 10 $k  \
+   +p$i  ++nodelist  ~/.nodelist.${JOB_ID}  \
+   +setcpuaffinity
+done
+done
+--------------------------------------------------------------------------------
+TACC: Done.
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: 
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.974 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.168 seconds.
+--------------------
+start
+23
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 24.453957 sec 
+764209 solutions are found in 24.453998 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.985 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.134 seconds.
+--------------------
+start
+83
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 54.483980 sec 
+5099257 solutions are found in 54.484025 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.992 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.063 seconds.
+--------------------
+start
+23
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 7.494173 sec 
+764209 solutions are found in 7.494244 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 4.258 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.095 seconds.
+--------------------
+start
+83
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 19.079849 sec 
+5099257 solutions are found in 19.079893 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 4.233 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.061 seconds.
+--------------------
+start
+23
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 3.741938 sec 
+764209 solutions are found in 3.742013 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.997 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.112 seconds.
+--------------------
+start
+83
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 11.671634 sec 
+5099257 solutions are found in 11.671725 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.984 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.059 seconds.
+--------------------
+start
+23
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 4.110481 sec 
+764209 solutions are found in 4.110559 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.997 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.099 seconds.
+--------------------
+start
+83
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 14.903192 sec 
+5099257 solutions are found in 14.903280 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 4.069 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.079 seconds.
+--------------------
+start
+23
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 38.894715 sec 
+764209 solutions are found in 38.894781 sec, with 64 processors
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+
+Error: Swap failed: "mvapich" is not loaded.
+
+Charmrun> started all node programs in 3.999 seconds.
+Charmrun> scalable start enabled. 
+Charmrun> IBVERBS version of charmrun
+Converse -memory mode: paranoid
+Converse/Charm++ Commit ID: 
+Warning> Randomization of stack pointer is turned on in kernel, thread migration may not work! Run 'echo 0 > /proc/sys/kernel/randomize_va_space' as root to disable it, or try run with '+isomalloc_sync'.  
+Charm++> scheduler running in netpoll mode.
+CharmLB> Load balancer assumes all CPUs are same.
+Charm++> cpu affinity enabled. 
+Charm++> Running on 4 unique compute nodes (16-way SMP).
+Charm++> cpu topology info is gathered in 0.121 seconds.
+--------------------
+start
+83
+BEGINNING INFORMATION SET GENERATION
+Before root state, of size: 88
+After root state
+All states are done in 464.158301 sec 
+5099257 solutions are found in 464.158354 sec, with 64 processors
+TACC: Cleaning up after job: 2598809
+TACC: Done.
